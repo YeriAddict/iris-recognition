@@ -1,0 +1,90 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Virtual environment directories
+env/
+venv/
+ENV/
+.venv/
+bin/
+build/
+lib/
+lib64/
+share/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# VS Code workspace settings
+.vscode/
+
+# PyCharm project files
+.idea/
+
+# macOS system files
+.DS_Store
+
+# Logs and temporary files
+*.log
+*.out
+*.pid
+*.gz
+*.zip
+
+# Unit test / coverage results
+*.cover
+*.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.prof
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Credentials and configuration files
+.env
+*.pem
+*.key
+
+# Data and model artifacts
+data/
+*.csv
+*.h5
+*.hdf5
+*.db
+*.sqlite3
+*.model
+*.pkl
+*.sav
+*.npy
+*.npz
+
+# Ignore local configuration files
+config.json
+config.py
+
+# Cache files
+.cache/
+*.tmp
+*.bak
+*.swp
+*.swo
