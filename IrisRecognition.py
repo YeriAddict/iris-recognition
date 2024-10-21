@@ -91,7 +91,7 @@ class IrisRecognizer:
             pupil_coordinates = iris_localizer.localize()
             iris_localizer.save_image(localized_image_path)
 
-            self.localized_images.append(iris_localizer.image)
+            self.localized_images.append((iris_localizer.image, original_image_path))
             self.pupil_coordinates.append(pupil_coordinates)
         return self.localized_images, self.pupil_coordinates
     
