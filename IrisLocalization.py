@@ -90,10 +90,10 @@ class IrisLocalizer:
             gray_image = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
 
         # Apply a bilateral filter to smooth the image while preserving edges
-        bilateral = cv2.bilateralFilter(gray_image, 9, 75, 75)
+        bilateral = cv2.bilateralFilter(gray_image, 15, 75, 75)
 
         # Create a binary mask by thresholding the filtered image
-        masked = cv2.inRange(bilateral, 0, 70)
+        masked = cv2.inRange(bilateral, 0, 75)
 
         # Apply the mask to the original filtered image to retain only the pixels within the threshold range
         masked_img = cv2.bitwise_and(bilateral, masked)
