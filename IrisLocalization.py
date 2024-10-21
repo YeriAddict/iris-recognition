@@ -1,9 +1,41 @@
 import cv2
 import numpy as np
 
-# TODO: Comment the code and improve code for detect_pupil, detect_sclera
-
 class IrisLocalizer:
+    """
+    Class for localizing the iris in an eye image.
+    
+    Attributes
+    ----------
+    image : numpy.ndarray
+        The input image containing the eye.
+    region_dimension : int
+        The dimension of the region around the estimated pupil center for refinement. Default is 60 (e.g 120x120 region)
+    height : int
+        The height of the input image.
+    width : int
+        The width of the input image.
+    Xp : int or None
+        The x-coordinate of the pupil center.
+    Yp : int or None
+        The y-coordinate of the pupil center.
+    Rp : int or None
+        The radius of the pupil.
+
+    Methods
+    -------
+    estimate_pupil_center_coordinates():
+        Estimates the initial coordinates of the pupil center using horizontal and vertical projections.
+    refine_pupil_center_coordinates():
+        Refines the estimated coordinates of the pupil center by binarizing a restricted region and by using adaptive thresholding and calculating the centroid with the moments.
+    detect_iris():
+        Detects the iris using edge detection and the Hough Circle Transform.
+    localize():
+        Localizes the iris by estimating and refining the pupil center coordinates and then detecting the iris.
+    save_image(filename):
+        Saves the image with the detected iris boundaries drawn on it.
+    """
+
     def __init__(self, image):
         self.image = image
         self.region_dimension = 60
@@ -14,28 +46,24 @@ class IrisLocalizer:
         self.Yp = None
         self.Rp = None
 
-        self.Xs = None
-        self.Ys = None
-        self.Rs = None
-
     def estimate_pupil_center_coordinates(self):
+        # Compute horizontal and vertical projections
         horizontal_projection = np.sum(self.image, axis=0)
         vertical_projection = np.sum(self.image, axis=1)
 
+        # Estimate the pupil center as the minimum of the projections
         self.Xp = np.argmin(horizontal_projection)
         self.Yp = np.argmin(vertical_projection)
 
     def refine_pupil_center_coordinates(self):
-        # Define the region coordinates
+        # Define the 120x120 region around the estimated center
         x1 = max(0, self.Xp - self.region_dimension)
         x2 = min(self.width, self.Xp + self.region_dimension)
         y1 = max(0, self.Yp - self.region_dimension)
         y2 = min(self.height, self.Yp + self.region_dimension)
-
-        # Extract the pupil region based on the estimated center
         pupil_region = self.image[y1:y2, x1:x2]
 
-        # Convert to binary image
+        # Convert to grayscale
         if len(pupil_region.shape) == 3 and pupil_region.shape[2] == 3:
             pupil_region = cv2.cvtColor(pupil_region, cv2.COLOR_BGR2GRAY)
 
@@ -44,88 +72,60 @@ class IrisLocalizer:
         
         # Find the centroid of the binary region
         moments = cv2.moments(threshold)
-        centroid_x = int(moments["m10"] / moments["m00"])
-        centroid_y = int(moments["m01"] / moments["m00"])
+        if moments["m00"] != 0:
+            centroid_x = int(moments["m10"] / moments["m00"])
+            centroid_y = int(moments["m01"] / moments["m00"])
+        else:
+            centroid_x = self.Xp
+            centroid_y = self.Yp
 
+        # Update the pupil center coordinates
         self.Xp = centroid_x + x1
         self.Yp = centroid_y + y1
-        self.Rp = np.sqrt(np.sum(threshold == 255) / np.pi)
    
-    def detect_pupil(self):
-        x1 = max(0, self.Xp - self.region_dimension)
-        x2 = min(self.width, self.Xp + self.region_dimension)
-        y1 = max(0, self.Yp - self.region_dimension)
-        y2 = min(self.height, self.Yp + self.region_dimension)        
+    def detect_iris(self):
+        # Convert to grayscale
+        gray_image = self.image
+        if len(gray_image.shape) == 3 and gray_image.shape[2] == 3:
+            gray_image = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
 
-        # Extract the region of interest (ROI)
-        pupil_region = self.image[y1:y2, x1:x2]
+        # Apply a bilateral filter to smooth the image while preserving edges
+        bilateral = cv2.bilateralFilter(gray_image, 9, 75, 75)
 
-        # Check if the ROI has 3 channels (BGR), otherwise use as grayscale
-        if len(pupil_region.shape) == 3 and pupil_region.shape[2] == 3:
-            pupil_region = cv2.cvtColor(pupil_region, cv2.COLOR_BGR2GRAY)
+        # Create a binary mask by thresholding the filtered image
+        masked = cv2.inRange(bilateral, 0, 70)
 
-        # Apply the Canny edge detector
-        edges = cv2.Canny(pupil_region, 50, 150)
+        # Apply the mask to the original filtered image to retain only the pixels within the threshold range
+        masked_img = cv2.bitwise_and(bilateral, masked)
 
-        # Apply the Hough Circle Transform to detect pupil circles
-        circles = cv2.HoughCircles(edges, cv2.HOUGH_GRADIENT, dp=1.2, minDist=20, param1=50, param2=30, minRadius=20, maxRadius=50)
+        # Detect edges using the Canny edge detector
+        edges = cv2.Canny(masked_img, 100, 220)
 
-        if circles is not None:
-            circles = np.round(circles[0, :]).astype("int")
-            for (x, y, r) in circles:
-                # Draw the detected circle on the original image
-                cv2.circle(self.image, (x + x1, y + y1), r, (235, 206, 135), 1)
-                self.Rp = r  # Set the pupil radius
-                return x + x1, y + y1, r
-        return None
+         # Use the Hough Circle Transform to detect circular shapes in the edge-detected image
+        circles = cv2.HoughCircles(edges, cv2.HOUGH_GRADIENT, 5, 100)
 
-    def detect_sclera(self):
-        # Define a region larger than the pupil region to cover the iris
-        iris_region_dimension = int(self.Rp * 2.5)  # Adjust based on expected iris size
+        # Find the circle closest to the estimated center by calculating the Euclidean distance
+        closest_circle = min(circles[0], key=lambda x: np.linalg.norm(np.array([self.Xp, self.Yp]) - np.array([x[0], x[1]])))
 
-        # Ensure that the region doesn't go out of bounds
-        x1 = max(0, self.Xp - iris_region_dimension)
-        x2 = min(self.width, self.Xp + iris_region_dimension)
-        y1 = max(0, self.Yp - iris_region_dimension)
-        y2 = min(self.height, self.Yp + iris_region_dimension)        
-
-        # Extract the region of interest (ROI) around the pupil for iris/sclera detection
-        iris_region = self.image[y1:y2, x1:x2]
-
-        # Check if the ROI has 3 channels (BGR), convert to grayscale if necessary
-        if len(iris_region.shape) == 3 and iris_region.shape[2] == 3:
-            iris_region = cv2.cvtColor(iris_region, cv2.COLOR_BGR2GRAY)
-
-        # Apply the Canny edge detector to detect edges in the iris region
-        edges = cv2.Canny(iris_region, 50, 150)
-
-        # Apply the Hough Circle Transform to detect the iris circle (larger than the pupil)
-        circles = cv2.HoughCircles(
-            edges, cv2.HOUGH_GRADIENT, dp=1.2, minDist=20,
-            param1=50, param2=30, minRadius=int(self.Rp * 1.5), maxRadius=int(self.Rp * 3)
-        )
-
-        # If circles are detected, choose the first circle found
-        if circles is not None:
-            circles = np.round(circles[0, :]).astype("int")
-            for (x, y, r) in circles:
-                # Align the detected circle center with the stored pupil center
-                self.Xs = x + x1
-                self.Ys = y + y1
-                self.Rs = r
-                
-                # Draw the detected iris circle on the original image
-                cv2.circle(self.image, (self.Xs, self.Ys), self.Rs, (0, 255, 0), 2)
-                
-                return self.Xs, self.Ys, self.Rs  # Return coordinates and radius of the iris (approximating the sclera boundary)
-        
-        # If no circles are detected, return None
-        return None
+        # Update the pupil center coordinates
+        self.Xp = int(closest_circle[0])
+        self.Yp = int(closest_circle[1])
+        self.Rp = int(closest_circle[2])
     
     def localize(self):
+        # Find the coordinates of the pupil center and the radius of the pupil
         self.estimate_pupil_center_coordinates()
         self.refine_pupil_center_coordinates()
-        self.detect_pupil()
-        self.detect_sclera()
+        self.detect_iris()
         
-        return (self.Xp, self.Yp, self.Rp), (self.Xs, self.Ys, self.Rs)
+        return (self.Xp, self.Yp, self.Rp)
+    
+    def save_image(self, filename):
+        # Draw the inner boundary (pupil)
+        cv2.circle(self.image, (self.Xp, self.Yp), self.Rp, (255, 255, 255), 1)
+
+        # Draw the outer boundary (sclera)
+        cv2.circle(self.image, (self.Xp, self.Yp), self.Rp + 55, (255, 255, 255), 1)
+
+        # Save the image with the detected iris boundaries
+        cv2.imwrite(filename, self.image)
