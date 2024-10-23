@@ -1,14 +1,15 @@
 import os
 import cv2
 import numpy as np
-from scipy.spatial import distance
 
 from IrisLocalization import IrisLocalizer
+from IrisNormalization import IrisNormalizer
 
 # Global constants
 INPUT_FOLDER = "input"
 OUTPUT_FOLDER = "output"
 LOCALIZED_FOLDER = "/localized"
+NORMALIZED_FOLDER = "/normalized"
 
 class DataLoader:
     """
@@ -75,10 +76,14 @@ class IrisRecognizer:
         self.input_path = INPUT_FOLDER
         self.output_path = OUTPUT_FOLDER
         self.localized_images_path = LOCALIZED_FOLDER
+        self.normalized_images_path = NORMALIZED_FOLDER
 
         # Iris Localization
         self.localized_images = []
-        self.pupil_coordinates = []
+        self.pupils_coordinates = []
+
+        # Iris Normalization
+        self.normalized_images = []
 
     def localize_irises(self):
         for image, original_image_path in self.dataset:
@@ -88,20 +93,35 @@ class IrisRecognizer:
             os.makedirs(localized_image_directory, exist_ok=True)
 
             iris_localizer = IrisLocalizer(image)
-            pupil_coordinates = iris_localizer.localize()
+            localized_image, pupil_coordinates = iris_localizer.localize_iris()
             iris_localizer.save_image(localized_image_path)
 
-            self.localized_images.append((iris_localizer.image, original_image_path))
-            self.pupil_coordinates.append(pupil_coordinates)
-        return self.localized_images, self.pupil_coordinates
+            self.localized_images.append((localized_image, original_image_path))
+            self.pupils_coordinates.append(pupil_coordinates)
+        return self.localized_images, self.pupils_coordinates
     
     def normalize_irises(self):
-        pass
+        for localized_image, pupil_coordinates in zip(self.localized_images, self.pupils_coordinates):
+            image = localized_image[0]
+            original_image_path = localized_image[1]
+
+            relative_path = os.path.relpath(original_image_path, self.input_path)
+            normalized_image_path = os.path.join(self.output_path + self.normalized_images_path, relative_path)
+            normalized_image_directory = os.path.dirname(normalized_image_path)
+            os.makedirs(normalized_image_directory, exist_ok=True)
+
+            iris_normalizer = IrisNormalizer(image, pupil_coordinates)
+            normalized_image = iris_normalizer.normalize_iris()
+            iris_normalizer.save_image(normalized_image_path)
+
+            self.normalized_images.append((normalized_image, original_image_path))
+        return self.normalized_images
 
 def main():
     training, testing = DataLoader.create().load()
     training_iris_recognizer = IrisRecognizer(training)
     localized_images, pupil_coordinates = training_iris_recognizer.localize_irises()
+    normalized_images = training_iris_recognizer.normalize_irises()
 
 if __name__ == "__main__":
     main()
