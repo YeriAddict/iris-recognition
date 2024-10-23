@@ -117,6 +117,21 @@ class IrisRecognizer:
             self.normalized_images.append((normalized_image, original_image_path))
         return self.normalized_images
 
+def save_localized_images(dataset, folder_path, output_root_folder):
+    for image, original_image_path in dataset:
+        # Recreate the original folder structure under the new root folder 'localized'
+        relative_path = os.path.relpath(original_image_path, folder_path)  # Get relative path to preserve structure
+        localized_image_path = os.path.join(output_root_folder, relative_path)
+
+        # Create the necessary directories in the output folder
+        localized_image_dir = os.path.dirname(localized_image_path)
+        os.makedirs(localized_image_dir, exist_ok=True)
+
+        # Process and save the image
+        iris_localizer = IrisLocalizer(image)
+        pupil_coordinates = iris_localizer.localize_iris()
+        iris_localizer.save_image(localized_image_path)
+
 def main():
     training, testing = DataLoader.create().load()
     training_iris_recognizer = IrisRecognizer(training)
