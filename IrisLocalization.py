@@ -7,33 +7,28 @@ class IrisLocalizer:
     
     Attributes
     ----------
-    image : numpy.ndarray
-        The input image containing the eye.
-    region_dimension : int
-        The dimension of the region around the estimated pupil center for refinement. Default is 60 (e.g 120x120 region)
-    height : int
-        The height of the input image.
-    width : int
-        The width of the input image.
-    Xp : int or None
-        The x-coordinate of the pupil center.
-    Yp : int or None
-        The y-coordinate of the pupil center.
-    Rp : int or None
-        The radius of the pupil.
+        image : numpy.ndarray
+            The input image containing the eye.
+        region_dimension : int
+            The dimension of the region around the estimated pupil center for refinement. Default is 60 (e.g 120x120 region)
+        height : int
+            The height of the input image.
+        width : int
+            The width of the input image.
+        Xp : int or None
+            The x-coordinate of the pupil center.
+        Yp : int or None
+            The y-coordinate of the pupil center.
+        Rp : int or None
+            The radius of the pupil.
 
     Methods
     -------
-    estimate_pupil_center_coordinates():
-        Estimates the initial coordinates of the pupil center using horizontal and vertical projections.
-    refine_pupil_center_coordinates():
-        Refines the estimated coordinates of the pupil center by binarizing a restricted region and by using adaptive thresholding and calculating the centroid with the moments.
-    detect_iris():
-        Detects the iris using edge detection and the Hough Circle Transform.
-    localize():
-        Localizes the iris by estimating and refining the pupil center coordinates and then detecting the iris.
-    save_image(filename):
-        Saves the image with the detected iris boundaries drawn on it.
+        localize_iris() :
+            Localizes the iris by estimating and refining the pupil center coordinates and then detecting the iris.
+            Returns the image with the detected iris boundaries and the coordinates of the iris center and radius.
+        save_image(filename) :
+            Saves the image with the detected iris boundaries drawn on it.
     """
 
     def __init__(self, image):
@@ -46,16 +41,26 @@ class IrisLocalizer:
         self.Yp = None
         self.Rp = None
 
-    def estimate_pupil_center_coordinates(self):
-        # Compute horizontal and vertical projections
-        horizontal_projection = np.sum(self.image, axis=0)
-        vertical_projection = np.sum(self.image, axis=1)
+    def localize_iris(self):
+        """
+        Localizes the iris in the given image.
+        This method performs the following steps:
+        1. Computes horizontal and vertical projections of the image to estimate the pupil center.
+        2. Defines a region around the estimated center and refines the pupil center using adaptive thresholding and centroid calculation.
+        3. Applies a bilateral filter and Canny edge detection to the grayscale image, then uses the Hough Circle Transform to detect the iris.
+        4. Creates a mask to isolate the iris region and updates the image to keep only the iris.
 
-        # Estimate the pupil center as the minimum of the projections
-        self.Xp = np.argmin(horizontal_projection)
-        self.Yp = np.argmin(vertical_projection)
+        Returns:
+            tuple: A tuple containing the processed image and the coordinates of the iris center and radius (self.image, (self.Xp, self.Yp, self.Rp)).
+        """
+        ### STEP 1 ###
 
-    def refine_pupil_center_coordinates(self):
+        # Estimate the pupil center as the center of the image
+        self.Xp = self.image.shape[1] // 2
+        self.Yp = self.image.shape[0] // 2
+
+        ### STEP 2 ###
+
         # Define the 120x120 region around the estimated center
         x1 = max(0, self.Xp - self.region_dimension)
         x2 = min(self.width, self.Xp + self.region_dimension)
@@ -82,8 +87,9 @@ class IrisLocalizer:
         # Update the pupil center coordinates
         self.Xp = centroid_x + x1
         self.Yp = centroid_y + y1
-   
-    def detect_iris(self):
+
+        ### STEP 3 ###
+
         # Convert to grayscale
         gray_image = self.image
         if len(gray_image.shape) == 3 and gray_image.shape[2] == 3:
@@ -112,20 +118,25 @@ class IrisLocalizer:
         self.Yp = int(closest_circle[1])
         self.Rp = int(closest_circle[2])
     
-    def localize(self):
-        # Find the coordinates of the pupil center and the radius of the pupil
-        self.estimate_pupil_center_coordinates()
-        self.refine_pupil_center_coordinates()
-        self.detect_iris()
-        
-        return (self.Xp, self.Yp, self.Rp)
+        ### STEP 4 ###
+
+        # Create a mask to keep only the iris region
+        mask = np.zeros_like(self.image)
+
+        # Draw a white-filled circle over the iris area on the mask
+        cv2.circle(mask, (self.Xp, self.Yp), int(self.Rp+55), (255, 255, 255), thickness=-1)
+
+        # Keep only the iris region by performing a bitwise AND with the mask
+        self.image = cv2.bitwise_and(self.image, mask)
+
+        return self.image, (self.Xp, self.Yp, self.Rp)
     
     def save_image(self, filename):
-        # Draw the inner boundary (pupil)
-        cv2.circle(self.image, (self.Xp, self.Yp), self.Rp, (255, 255, 255), 1)
+        """
+        Saves the image with the detected iris boundaries to a specified file.
 
-        # Draw the outer boundary (sclera)
-        cv2.circle(self.image, (self.Xp, self.Yp), self.Rp + 55, (255, 255, 255), 1)
-
+        Parameters:
+            filename (str): The path and name of the file where the image will be saved.
+        """
         # Save the image with the detected iris boundaries
         cv2.imwrite(filename, self.image)

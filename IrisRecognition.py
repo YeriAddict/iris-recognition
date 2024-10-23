@@ -43,7 +43,7 @@ def save_localized_images(dataset, folder_path, output_root_folder):
 
         # Process and save the image
         iris_localizer = IrisLocalizer(image)
-        pupil_coordinates = iris_localizer.localize()
+        pupil_coordinates = iris_localizer.localize_iris()
         iris_localizer.save_image(localized_image_path)
 
 def main():
