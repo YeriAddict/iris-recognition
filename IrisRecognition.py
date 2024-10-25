@@ -1,15 +1,17 @@
 import os
 import cv2
-import numpy as np
 
 from IrisLocalization import IrisLocalizer
 from IrisNormalization import IrisNormalizer
+from ImageEnhancement import IrisIlluminater, IrisEnhancer
 
 # Global constants
 INPUT_FOLDER = "input"
 OUTPUT_FOLDER = "output"
-LOCALIZED_FOLDER = "/localized"
-NORMALIZED_FOLDER = "/normalized"
+LOCALIZED_FOLDER = "/a_localized"
+NORMALIZED_FOLDER = "/b_normalized"
+ILLUMINATED_FOLDER = "/c_illuminated"
+ENHANCED_FOLDER = "/d_enhanced"
 
 class DataLoader:
     """
@@ -23,9 +25,9 @@ class DataLoader:
 
     Methods
     -------
-        create() -> DataLoader:
+        create() : DataLoader:
             Creates and returns a singleton instance of the DataLoader class.
-        load() -> tuple:
+        load() : tuple:
             Loads the training and testing data from the specified directory structure.
             Returns a tuple containing the training and testing data.
     """
@@ -77,6 +79,8 @@ class IrisRecognizer:
         self.output_path = OUTPUT_FOLDER
         self.localized_images_path = LOCALIZED_FOLDER
         self.normalized_images_path = NORMALIZED_FOLDER
+        self.illuminated_images_path = ILLUMINATED_FOLDER
+        self.enhanced_images_path = ENHANCED_FOLDER
 
         # Iris Localization
         self.localized_images = []
@@ -84,6 +88,10 @@ class IrisRecognizer:
 
         # Iris Normalization
         self.normalized_images = []
+
+        # Iris Enhancement
+        self.illuminated_images = []
+        self.enhanced_images = []
 
     def localize_irises(self):
         for image, original_image_path in self.dataset:
@@ -116,27 +124,44 @@ class IrisRecognizer:
 
             self.normalized_images.append((normalized_image, original_image_path))
         return self.normalized_images
+    
+    def illuminate_irises(self):
+        for normalized_image, original_image_path in self.normalized_images:
+            relative_path = os.path.relpath(original_image_path, self.input_path)
+            illuminated_image_path = os.path.join(self.output_path + self.illuminated_images_path, relative_path)
+            illuminated_image_directory = os.path.dirname(illuminated_image_path)
+            os.makedirs(illuminated_image_directory, exist_ok=True)
 
-def save_localized_images(dataset, folder_path, output_root_folder):
-    for image, original_image_path in dataset:
-        # Recreate the original folder structure under the new root folder 'localized'
-        relative_path = os.path.relpath(original_image_path, folder_path)  # Get relative path to preserve structure
-        localized_image_path = os.path.join(output_root_folder, relative_path)
+            iris_illuminater = IrisIlluminater(normalized_image)
+            illuminated_image = iris_illuminater.illuminate_iris()
+            iris_illuminater.save_image(illuminated_image_path)
 
-        # Create the necessary directories in the output folder
-        localized_image_dir = os.path.dirname(localized_image_path)
-        os.makedirs(localized_image_dir, exist_ok=True)
+            self.illuminated_images.append((illuminated_image, original_image_path))
+        return self.illuminated_images        
 
-        # Process and save the image
-        iris_localizer = IrisLocalizer(image)
-        pupil_coordinates = iris_localizer.localize_iris()
-        iris_localizer.save_image(localized_image_path)
+    def enhance_irises(self):
+        for normalized_image, illuminated_image in zip(self.normalized_images, self.illuminated_images):
+            original_image_path = normalized_image[1]
+
+            relative_path = os.path.relpath(original_image_path, self.input_path)
+            enhanced_image_path = os.path.join(self.output_path + self.enhanced_images_path, relative_path)
+            enhanced_image_directory = os.path.dirname(enhanced_image_path)
+            os.makedirs(enhanced_image_directory, exist_ok=True)
+
+            iris_enhancer = IrisEnhancer(normalized_image[0], illuminated_image[0])
+            enhanced_image = iris_enhancer.enhance_iris()
+            iris_enhancer.save_image(enhanced_image_path)
+
+            self.enhanced_images.append((enhanced_image, original_image_path))
+        return self.enhanced_images
 
 def main():
     training, testing = DataLoader.create().load()
     training_iris_recognizer = IrisRecognizer(training)
     localized_images, pupil_coordinates = training_iris_recognizer.localize_irises()
     normalized_images = training_iris_recognizer.normalize_irises()
+    illuminated_images = training_iris_recognizer.illuminate_irises()
+    enhanced_images = training_iris_recognizer.enhance_irises()
 
 if __name__ == "__main__":
     main()
