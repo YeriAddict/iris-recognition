@@ -8,7 +8,7 @@ class IrisNormalizer:
     Attributes
     ----------
         image : numpy.ndarray
-            The original iris image.
+            The localized iris image.
         Xp : int
             The x-coordinate of the pupil center.
         Yp : int
@@ -19,8 +19,10 @@ class IrisNormalizer:
             The height of the normalized image.
         N : int
             The width of the normalized image.
-    Methods:
-        normalize_iris():
+
+    Methods
+    -------
+        normalize_iris() :
             Normalizes the iris image by remapping it to polar coordinates from cartesian coordinates.
         save_image(filename) :
             Saves the image with the normalized iris.
