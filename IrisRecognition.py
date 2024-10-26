@@ -4,6 +4,7 @@ import numpy as np
 
 from IrisLocalization import IrisLocalizer
 from IrisNormalization import IrisNormalizer
+from FeatureExtraction import FeatureExtractor
 
 # Global constants
 INPUT_FOLDER = "input"
@@ -137,6 +138,15 @@ def main():
     training_iris_recognizer = IrisRecognizer(training)
     localized_images, pupil_coordinates = training_iris_recognizer.localize_irises()
     normalized_images = training_iris_recognizer.normalize_irises()
+
+    for normalized_image, original_image_path in normalized_images:
+        # Create a feature extractor
+        feature_extractor = FeatureExtractor(normalized_image)
+        features = feature_extractor.extract_features()
+
+        # Print feature vector details for verification
+        print("Feature Vector Length:", len(features))
+        print("Feature Vector Sample:", features[:10])
 
 if __name__ == "__main__":
     main()
