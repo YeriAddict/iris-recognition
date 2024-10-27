@@ -174,8 +174,7 @@ def main():
     normalized_images = training_iris_recognizer.normalize_irises()
     illuminated_images = training_iris_recognizer.illuminate_irises()
     enhanced_images = training_iris_recognizer.enhance_irises()
-    # features_vectors = training_iris_recognizer.extract_irises_features()
-
+    features_vectors = training_iris_recognizer.extract_irises_features()
 
 if __name__ == "__main__":
     main()
