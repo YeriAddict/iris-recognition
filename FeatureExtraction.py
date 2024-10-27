@@ -124,7 +124,7 @@ class FeatureExtractor:
             for j in range(0, self.roi_width, self.block_size):
                 block = filtered_roi[i:i+self.block_size, j:j+self.block_size]
                 block_mean = np.mean(np.abs(block))
-                block_average_absolute_deviation = np.mean(np.abs(block - block_mean))
+                block_average_absolute_deviation = np.mean(np.abs(np.abs(block) - block_mean))
                 feature = (block_mean, block_average_absolute_deviation)
                 features.append(feature[0])
                 features.append(feature[1])
@@ -138,7 +138,7 @@ class FeatureExtractor:
         2. Applies two different filters to the ROI.
         3. Extracts features from the filtered ROIs.
         4. Combines the features from both filtered ROIs.
-        
+
         Returns:
             list: A list of combined features extracted from the filtered ROIs.
         """
