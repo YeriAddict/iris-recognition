@@ -94,6 +94,9 @@ class IrisRecognizer:
         self.illuminated_images = []
         self.enhanced_images = []
 
+        # Iris Feature Extraction
+        self.features_vectors = []
+
     def localize_irises(self):
         for image, original_image_path in self.dataset:
             relative_path = os.path.relpath(original_image_path, self.input_path)
@@ -156,6 +159,14 @@ class IrisRecognizer:
             self.enhanced_images.append((enhanced_image, original_image_path))
         return self.enhanced_images
 
+    def extract_irises_features(self):
+        for enhanced_image, original_image_path in self.enhanced_images:
+            feature_extractor = FeatureExtractor(enhanced_image)
+            features = feature_extractor.extract_features()
+
+            self.features_vectors.append((features, original_image_path))
+        return self.features_vectors
+
 def main():
     training, testing = DataLoader.create().load()
     training_iris_recognizer = IrisRecognizer(training)
@@ -163,15 +174,8 @@ def main():
     normalized_images = training_iris_recognizer.normalize_irises()
     illuminated_images = training_iris_recognizer.illuminate_irises()
     enhanced_images = training_iris_recognizer.enhance_irises()
+    # features_vectors = training_iris_recognizer.extract_irises_features()
 
-    for normalized_image, original_image_path in normalized_images:
-        # Create a feature extractor
-        feature_extractor = FeatureExtractor(normalized_image)
-        features = feature_extractor.extract_features()
-
-        # Print feature vector details for verification
-        print("Feature Vector Length:", len(features))
-        print("Feature Vector Sample:", features[:10])
 
 if __name__ == "__main__":
     main()
