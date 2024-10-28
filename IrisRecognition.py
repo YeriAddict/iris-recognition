@@ -1,10 +1,14 @@
 import os
 import cv2
+import numpy as np
+from collections import Counter
+
 
 from IrisLocalization import IrisLocalizer
 from IrisNormalization import IrisNormalizer
 from ImageEnhancement import IrisIlluminater, IrisEnhancer
 from FeatureExtraction import FeatureExtractor
+from IrisMatching import IrisMatcher
 
 # Global constants
 INPUT_FOLDER = "input"
@@ -36,8 +40,8 @@ class DataLoader:
 
     def __init__(self):
         self.input_path = INPUT_FOLDER
-        self.training = None
-        self.testing = None
+        self.training = []
+        self.testing = []
 
     @classmethod
     def create(cls):
@@ -46,30 +50,64 @@ class DataLoader:
             cls._instance.__init__()
         return cls._instance
 
+    # def load(self):
+    #     data = {"training": [], "testing": []}
+    #     for eye_folder in os.listdir(self.input_path):
+    #         eye_path = os.path.join(self.input_path, eye_folder)
+    #         if os.path.isdir(eye_path):
+    #             subfolders = sorted(os.listdir(eye_path))
+    #             num_images = len(subfolders)
+    #             # Ensure each class has enough images for training and testing
+    #             if num_images < 2:
+    #                 continue  # Skip classes with fewer than 2 images
+    #             # Calculate the split for training and testing
+    #             num_train = max(1, num_images // 3)  # Ensure at least one training image
+
+    #             # Split into training and testing
+    #             training_folder = subfolders[:num_train]
+    #             testing_folder = subfolders[num_train:]
+    #             # Load training images
+    #             for img_file in training_folder:
+    #                 img_path = os.path.join(eye_path, img_file)
+    #                 image = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+    #                 if image is not None:
+    #                     data["training"].append((image, img_path))
+
+    #             # Load testing images
+    #             for img_file in testing_folder:
+    #                 img_path = os.path.join(eye_path, img_file)
+    #                 image = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+    #                 if image is not None:
+    #                     data["testing"].append((image, img_path))
+
+    #     self.training = data["training"]
+    #     self.testing = data["testing"]
+
+    #     return self.training, self.testing
     def load(self):
-        data = {"training": [], "testing": []}
         for eye_folder in os.listdir(self.input_path):
             eye_path = os.path.join(self.input_path, eye_folder)
             if os.path.isdir(eye_path):
-                subfolders = sorted(os.listdir(eye_path))
-                training_folder = os.path.join(eye_path, subfolders[0])
-                testing_folder = os.path.join(eye_path, subfolders[1])
-                
-                for img_file in os.listdir(training_folder):
-                    img_path = os.path.join(training_folder, img_file)
-                    image = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
-                    if image is not None:
-                        data["training"].append((image, img_path))
+                session_1_folder = os.path.join(eye_path, "1")
+                session_2_folder = os.path.join(eye_path, "2")
 
-                for img_file in os.listdir(testing_folder):
-                    img_path = os.path.join(testing_folder, img_file)
-                    image = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
-                    if image is not None:
-                        data["testing"].append((image, img_path))
+                # Load exactly 3 images from session "1" for training
+                if os.path.isdir(session_1_folder):
+                    session_1_images = sorted(os.listdir(session_1_folder))
+                    for img_file in session_1_images[:3]:  # Take only the first 3 images for training
+                        img_path = os.path.join(session_1_folder, img_file)
+                        image = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+                        if image is not None:
+                            self.training.append((image, img_path))
 
-        self.training = data["training"]
-        self.testing = data["testing"]
-
+                # Load all images from session "2" for testing
+                if os.path.isdir(session_2_folder):
+                    for img_file in os.listdir(session_2_folder):
+                        img_path = os.path.join(session_2_folder, img_file)
+                        image = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+                        if image is not None:
+                            self.testing.append((image, img_path))
+        print(f"Total training images: {len(self.training)}, Total testing images: {len(self.testing)}")  # Debugging line
         return self.training, self.testing
 
 class IrisRecognizer:
@@ -167,14 +205,87 @@ class IrisRecognizer:
             self.features_vectors.append((features, original_image_path))
         return self.features_vectors
 
+    def train_matcher(self):
+
+        training_features = []
+        training_labels = []
+
+        for features, path in self.features_vectors:
+            training_features.append(features)
+            label = os.path.basename(os.path.dirname(path))
+            training_labels.append(label)
+
+        # Convert to numpy arrays
+        training_features = np.array(training_features)
+        training_labels = np.array(training_labels)
+
+        # Train the matcher
+        self.matcher = IrisMatcher()
+        self.matcher.fit(training_features, training_labels)
+    
+    def match_irises(self, test_features):
+
+        return self.matcher.match(test_features)
+
 def main():
     training, testing = DataLoader.create().load()
+    print(f"Loaded {len(training)} training images and {len(testing)} testing images.")
+
     training_iris_recognizer = IrisRecognizer(training)
     localized_images, pupil_coordinates = training_iris_recognizer.localize_irises()
     normalized_images = training_iris_recognizer.normalize_irises()
     illuminated_images = training_iris_recognizer.illuminate_irises()
     enhanced_images = training_iris_recognizer.enhance_irises()
     features_vectors = training_iris_recognizer.extract_irises_features()
+
+    # Extract features for the testing images as well
+    testing_iris_recognizer = IrisRecognizer(testing)
+    testing_localized_images, testing_pupil_coordinates = testing_iris_recognizer.localize_irises()
+    testing_normalized = testing_iris_recognizer.normalize_irises()
+    testing_illuminated = testing_iris_recognizer.illuminate_irises()
+    testing_enhanced = testing_iris_recognizer.enhance_irises()
+    testing_features_vectors = testing_iris_recognizer.extract_irises_features()
+
+    # Print out feature vectors length for debugging
+    print(f"Extracted {len(features_vectors)} feature vectors.")
+
+    # Prepare the features and labels for training
+    training_features = [features for features, _ in features_vectors]
+    training_labels = [os.path.basename(path).split('_')[0] for _, path in features_vectors]
+
+    # Prepare the features and labels for testing
+    testing_features = [features for features, _ in testing_features_vectors]
+    testing_labels = [os.path.basename(path).split('_')[0] for _, path in testing_features_vectors]
+
+    # # Print the class distribution in the training data
+    class_counts = Counter(training_labels)
+    # print("Class distribution in the training data:")
+    # for class_label, count in class_counts.items():
+    #     print(f"Class {class_label}: {count} samples")
+
+    # Ensure at least two classes are present before proceeding with LDA
+    # if len(class_counts) < 2:
+    #     print("Error: The training data must contain at least two different classes for LDA.")
+    #     return
+    
+    # Continue with the matching process if data is valid
+    print(f"Total training images: {len(training_features)}, Total testing images: {len(testing_features)}")
+
+    # Train the iris matcher and test the classification
+    iris_matcher = IrisMatcher(num_classes=len(class_counts))
+    iris_matcher.fit(training_features, training_labels)
+    
+    correct_matches = 0
+    if len(testing_labels) > 0:
+        for feature_vector, true_label in zip(testing_features, testing_labels):
+            predicted_label, _ = iris_matcher.match(feature_vector)
+            if predicted_label == true_label:
+                correct_matches += 1
+
+        accuracy = correct_matches / len(testing_labels)
+        print(f"Accuracy: {accuracy * 100:.2f}%")
+    else:
+        print("No testing labels available for evaluation.")
 
 if __name__ == "__main__":
     main()
