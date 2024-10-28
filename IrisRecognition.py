@@ -96,6 +96,7 @@ class IrisRecognizer:
 
         # Iris Feature Extraction
         self.features_vectors = []
+        self.labels = []
 
     def localize_irises(self):
         for image, original_image_path in self.dataset:
@@ -163,9 +164,11 @@ class IrisRecognizer:
         for enhanced_image, original_image_path in self.enhanced_images:
             feature_extractor = FeatureExtractor(enhanced_image)
             features = feature_extractor.extract_features()
+            label = os.path.normpath(original_image_path).split(os.sep)[1]
 
-            self.features_vectors.append((features, original_image_path))
-        return self.features_vectors
+            self.features_vectors.append(features)
+            self.labels.append(label)
+        return self.features_vectors, self.labels
 
 def main():
     training, testing = DataLoader.create().load()
@@ -174,7 +177,7 @@ def main():
     normalized_images = training_iris_recognizer.normalize_irises()
     illuminated_images = training_iris_recognizer.illuminate_irises()
     enhanced_images = training_iris_recognizer.enhance_irises()
-    features_vectors = training_iris_recognizer.extract_irises_features()
+    features_vectors, labels = training_iris_recognizer.extract_irises_features()
 
 if __name__ == "__main__":
     main()
