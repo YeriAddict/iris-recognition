@@ -57,15 +57,14 @@ class IrisMatcher:
         for label in unique_labels:
             # Select the reduced features belonging to the current class
             class_reduced_features = reduced_features[train_labels == label]
-            # print(f"Label {label}: {class_reduced_features.shape}")  # Should be (3, 107) for each class
+            # print(f"Label {label}: {class_reduced_features.shape}")  # Should be (3, 107) 
 
             # Compute the mean vector for this class
             class_center = np.mean(class_reduced_features, axis=0)
             # print(f"Center for class {label}: {class_center.shape}")  # Should be (107,)
 
-            self.class_centers[label] = class_center  # Each center should have shape (107,)
+            self.class_centers[label] = class_center  # should be (107,)
 
-        # Verify the shape of class centers for debugging
         for label, center in self.class_centers.items():
             print(f"Shape of center for class {label}: {center.shape}")
 
@@ -94,7 +93,6 @@ class IrisMatcher:
 
         # Iterate over each class center
         for label, center in self.class_centers.items():
-            # Ensure that the center has the same shape as the reduced feature
             print(f"Shape of center for class {label}: {center.shape}")
 
             min_distance = float('inf')
@@ -104,7 +102,6 @@ class IrisMatcher:
                 # Adjust the feature vector based on rotation (if necessary)
                 rotated_f = self.rotate_feature(reduced_f, angle)
 
-                # # Check shapes before calculating distances
                 # if rotated_f.shape != center.shape:
                 #     print(f"Error: Shape mismatch between rotated_f {rotated_f.shape} and center {center.shape}")
                 #     continue
@@ -141,6 +138,22 @@ class IrisMatcher:
         Returns:
             array-like: Adjusted feature vector.
         """
-        # In this simplified implementation, the rotation logic can be adjusted as necessary.
-        # For now, we assume the feature vector is invariant to the angle.
-        return feature
+        # Convert angle to radians for rotation (as most rotation formulas use radians)
+        angle_rad = np.deg2rad(angle)
+        
+        # This is a basic rotation that could apply if the feature represents spatial data
+        rotation_matrix = np.array([
+            [np.cos(angle_rad), -np.sin(angle_rad)],
+            [np.sin(angle_rad), np.cos(angle_rad)]
+        ])
+        
+        # If the feature is 2D, reshape and apply the rotation
+        if feature.ndim == 2:
+            rotated_feature = feature @ rotation_matrix
+        else:
+            # For 1D features, assume a circular shift proportional to the angle
+            shift_amount = int(angle / (360 / len(feature)))  # Adjust based on length of feature vector
+            rotated_feature = np.roll(feature, shift_amount)
+
+        return rotated_feature
+        # return feature
