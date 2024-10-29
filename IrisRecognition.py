@@ -4,6 +4,7 @@ import cv2
 from IrisLocalization import IrisLocalizer
 from IrisNormalization import IrisNormalizer
 from ImageEnhancement import IrisIlluminater, IrisEnhancer
+from FeatureExtraction import FeatureExtractor
 
 # Global constants
 INPUT_FOLDER = "input"
@@ -93,6 +94,10 @@ class IrisRecognizer:
         self.illuminated_images = []
         self.enhanced_images = []
 
+        # Iris Feature Extraction
+        self.features_vectors = []
+        self.labels = []
+
     def localize_irises(self):
         for image, original_image_path in self.dataset:
             relative_path = os.path.relpath(original_image_path, self.input_path)
@@ -155,6 +160,16 @@ class IrisRecognizer:
             self.enhanced_images.append((enhanced_image, original_image_path))
         return self.enhanced_images
 
+    def extract_irises_features(self):
+        for enhanced_image, original_image_path in self.enhanced_images:
+            feature_extractor = FeatureExtractor(enhanced_image)
+            features = feature_extractor.extract_features()
+            label = os.path.normpath(original_image_path).split(os.sep)[1]
+
+            self.features_vectors.append(features)
+            self.labels.append(label)
+        return self.features_vectors, self.labels
+
 def main():
     training, testing = DataLoader.create().load()
     training_iris_recognizer = IrisRecognizer(training)
@@ -162,6 +177,7 @@ def main():
     normalized_images = training_iris_recognizer.normalize_irises()
     illuminated_images = training_iris_recognizer.illuminate_irises()
     enhanced_images = training_iris_recognizer.enhance_irises()
+    features_vectors, labels = training_iris_recognizer.extract_irises_features()
 
 if __name__ == "__main__":
     main()
