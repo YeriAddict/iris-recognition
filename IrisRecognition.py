@@ -5,6 +5,7 @@ from IrisLocalization import IrisLocalizer
 from IrisNormalization import IrisNormalizer
 from ImageEnhancement import IrisIlluminater, IrisEnhancer
 from FeatureExtraction import FeatureExtractor
+from IrisMatching import IrisMatcher
 
 # Global constants
 INPUT_FOLDER = "input"
@@ -111,7 +112,6 @@ class IrisRecognizer:
 
             self.localized_images.append((localized_image, original_image_path))
             self.pupils_coordinates.append(pupil_coordinates)
-        return self.localized_images, self.pupils_coordinates
     
     def normalize_irises(self):
         for localized_image, pupil_coordinates in zip(self.localized_images, self.pupils_coordinates):
@@ -128,7 +128,6 @@ class IrisRecognizer:
             iris_normalizer.save_image(normalized_image_path)
 
             self.normalized_images.append((normalized_image, original_image_path))
-        return self.normalized_images
     
     def illuminate_irises(self):
         for normalized_image, original_image_path in self.normalized_images:
@@ -141,8 +140,7 @@ class IrisRecognizer:
             illuminated_image = iris_illuminater.illuminate_iris()
             iris_illuminater.save_image(illuminated_image_path)
 
-            self.illuminated_images.append((illuminated_image, original_image_path))
-        return self.illuminated_images        
+            self.illuminated_images.append((illuminated_image, original_image_path))    
 
     def enhance_irises(self):
         for normalized_image, illuminated_image in zip(self.normalized_images, self.illuminated_images):
@@ -158,26 +156,103 @@ class IrisRecognizer:
             iris_enhancer.save_image(enhanced_image_path)
 
             self.enhanced_images.append((enhanced_image, original_image_path))
-        return self.enhanced_images
 
-    def extract_irises_features(self):
+    def extract_irises_features(self, mode):
         for enhanced_image, original_image_path in self.enhanced_images:
             feature_extractor = FeatureExtractor(enhanced_image)
             features = feature_extractor.extract_features()
             label = os.path.normpath(original_image_path).split(os.sep)[1]
 
-            self.features_vectors.append(features)
-            self.labels.append(label)
-        return self.features_vectors, self.labels
+            self.features_vectors += features
+            if mode == "train":
+                self.labels.append(label)
+                self.labels.append(label)
+                self.labels.append(label)
+                self.labels.append(label)
+                self.labels.append(label)
+                self.labels.append(label)
+                self.labels.append(label)
+            elif mode == "test":
+                self.labels.append(label)
+            else:
+                print("Warn: Wrong mode")
+
 
 def main():
     training, testing = DataLoader.create().load()
+    # Training
     training_iris_recognizer = IrisRecognizer(training)
-    localized_images, pupil_coordinates = training_iris_recognizer.localize_irises()
-    normalized_images = training_iris_recognizer.normalize_irises()
-    illuminated_images = training_iris_recognizer.illuminate_irises()
-    enhanced_images = training_iris_recognizer.enhance_irises()
-    features_vectors, labels = training_iris_recognizer.extract_irises_features()
+    training_iris_recognizer.localize_irises()
+    training_iris_recognizer.normalize_irises()
+    training_iris_recognizer.illuminate_irises()
+    training_iris_recognizer.enhance_irises()
+    training_iris_recognizer.extract_irises_features("train")
+
+    # Ouput of training_features_vectors: [[],[],...] (2268, )
+    training_features_vectors = training_iris_recognizer.features_vectors
+    training_labels = training_iris_recognizer.labels # (2268, )
+
+    training_iris_matching = IrisMatcher(108)
+    training_iris_matching.fit(training_features_vectors, training_labels)
+
+    # Prediction
+    # Testing
+    testing_iris_recognizer = IrisRecognizer(testing)
+    testing_iris_recognizer.localize_irises()
+    testing_iris_recognizer.normalize_irises()
+    testing_iris_recognizer.illuminate_irises()
+    testing_iris_recognizer.enhance_irises()
+    testing_iris_recognizer.extract_irises_features("test")
+
+    # Ouput of testing_features_vectors: [[(vector1, angle1), (vector2, angle2), ...],[],[],...,[]]
+    testing_features_vectors = testing_iris_recognizer.features_vectors
+    testing_labels = testing_iris_recognizer.labels
+
+    d1_predicting_labels = []
+    d2_predicting_labels = []
+    d3_predicting_labels = []
+
+    # Prediction - matching
+    for i in range(0, len(testing_features_vectors), 7):
+        window = testing_features_vectors[i:i+7]
+        best_d1, best_d2, best_d3 = float("inf"), float("inf"), float("inf")
+        best_label_d1, best_label_d2, best_label_d3 = "", "", ""
+        
+        for v in window:
+            d1_best_label, d1_best_dist = training_iris_matching.match(v, "L1")
+            d2_best_label, d2_best_dist = training_iris_matching.match(v, "L2")
+            d3_best_label, d3_best_dist = training_iris_matching.match(v, "COSINE")
+            
+            print(d1_best_dist," | ", d1_best_label)
+            print("==============")
+            
+            if d1_best_dist < best_d1:
+                best_d1 = d1_best_dist
+                best_label_d1 = d1_best_label
+            if d2_best_dist < best_d2:
+                best_d2 = d2_best_dist
+                best_label_d2 = d2_best_label
+            if d3_best_dist < best_d3:
+                best_d3 = d3_best_dist
+                best_label_d3 = d3_best_label
+
+        d1_predicting_labels.append(best_label_d1)
+        d2_predicting_labels.append(best_label_d2)
+        d3_predicting_labels.append(best_label_d3)
+
+    # Performance Check
+    print("============= CRR:")
+    d1_crr = sum(1 for true_label, predict_label in zip(testing_labels, d1_predicting_labels) if true_label == predict_label) / len(testing_labels)
+    d2_crr = sum(1 for true_label, predict_label in zip(testing_labels, d2_predicting_labels) if true_label == predict_label) / len(testing_labels)
+    d3_crr = sum(1 for true_label, predict_label in zip(testing_labels, d3_predicting_labels) if true_label == predict_label) / len(testing_labels)
+   
+    print("L1 distance measure | ", d1_crr*100)
+    print("L2 distance measure | ", d2_crr*100)
+    print("Cosine distance measure | ", d3_crr*100)
+
+    print(d1_predicting_labels[:10], "\n")
+    print(testing_labels[:10])
+    print(len(d1_predicting_labels), len(testing_labels)) # 432, 432
 
 if __name__ == "__main__":
     main()

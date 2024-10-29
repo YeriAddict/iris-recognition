@@ -36,7 +36,8 @@ class IrisMatcher:
             train_labels : array-like, shape (n_samples,)
                 The class labels for the training samples.
         """
-        reduced_features = self.lda.fit_transform(train_features, train_labels) # (324, 108)
+        reduced_features = self.lda.fit_transform(train_features, train_labels)
+        print("Reduced features shape:", reduced_features.shape) # (2268, 107)
 
         # Step 3: Compute class centers in the reduced space
         for label in np.unique(train_labels):
@@ -69,9 +70,9 @@ class IrisMatcher:
             if metric == "L1":
                 distance = np.sum(np.abs(f - center)) 
             elif metric == "L2":
-                distance = np.sqrt(np.sum((f - center) ** 2))
+                distance = np.sum((f - center) ** 2) # np.sqrt(np.sum((f - center) ** 2))
             elif metric == "COSINE":
-                distance = 1 - np.dot(f, center) / (np.linalg.norm(f) * np.linalg.norm(center))
+                distance = 1 - np.dot(np.transpose(f), center) / (np.linalg.norm(f) * np.linalg.norm(center))
             else:
                 return print("WARN: Wrong input for metric")
             

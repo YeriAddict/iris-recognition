@@ -50,7 +50,7 @@ class FeatureExtractor:
         self.roi_height = 48
         self.roi_width = 512
         self.rotation_angles = [-9, -6, -3, 0, 3, 6, 9]
-        
+
         self.kernel_size = 31   # can be tuned
         self.f = 0.1            # can be tuned
         self.block_size = 8
@@ -185,9 +185,10 @@ class FeatureExtractor:
             filtered_roi2_features = self.extract_features_from_roi(filtered_roi2)
 
             # Combine the features from both channels
-            features = filtered_roi1_features + filtered_roi2_features
-
-            features_and_angle = (features, angle)
-            self.features.append(features_and_angle)
+            features_vector = filtered_roi1_features + filtered_roi2_features
+            self.features.append(features_vector)
+            
+            # features_and_angle = (features, angle)
+            # self.features.append(features_and_angle)
 
         return self.features
