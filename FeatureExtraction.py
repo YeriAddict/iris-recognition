@@ -50,9 +50,9 @@ class FeatureExtractor:
         self.roi_height = 48
         self.roi_width = 512
         self.rotation_angles = [-9, -6, -3, 0, 3, 6, 9]
-
-        self.kernel_size = 31
-        self.f = 0.1
+        
+        self.kernel_size = 31   # can be tuned
+        self.f = 0.1            # can be tuned
         self.block_size = 8
 
         # First Channel
@@ -103,7 +103,7 @@ class FeatureExtractor:
         M1 = np.cos(2 * np.pi * f * np.sqrt(x**2 + y**2))
 
         # Define the Gaussian envelope
-        gabor_kernel = (1/(2 * np.pi * delta_x * delta_y)) * np.exp(-0.5 * ((x**2 / delta_x**2) + (y**2 / delta_y**2))) * M1
+        gabor_kernel = (1/(2 * np.pi * delta_x * delta_y)) * np.exp(-0.5 * (((x**2) / (delta_x**2)) + ((y**2) / (delta_y**2)))) * M1
 
         return gabor_kernel
 
@@ -119,6 +119,7 @@ class FeatureExtractor:
         Returns:
             numpy.ndarray: The filtered region of interest.
         """
+        # Source: https://www.geeksforgeeks.org/opencv-getgaborkernel-method/
         # Create a grid for generating the kernel
         center = self.kernel_size // 2
         x = np.arange(-center, center + 1)
