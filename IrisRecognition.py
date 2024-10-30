@@ -223,9 +223,6 @@ def main():
             d2_best_label, d2_best_dist = training_iris_matching.match(v, "L2")
             d3_best_label, d3_best_dist = training_iris_matching.match(v, "COSINE")
             
-            print(d1_best_dist," | ", d1_best_label)
-            print("==============")
-            
             if d1_best_dist < best_d1:
                 best_d1 = d1_best_dist
                 best_label_d1 = d1_best_label

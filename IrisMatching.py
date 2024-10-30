@@ -36,10 +36,12 @@ class IrisMatcher:
             train_labels : array-like, shape (n_samples,)
                 The class labels for the training samples.
         """
+        # Convert train_features from shape (2268, 1) to (2268, 1536)
+        train_features = np.vstack(train_features)
+        train_labels = np.array(train_labels)
         reduced_features = self.lda.fit_transform(train_features, train_labels)
-        print("Reduced features shape:", reduced_features.shape) # (2268, 107)
 
-        # Step 3: Compute class centers in the reduced space
+        # Compute class centers in the reduced space
         for label in np.unique(train_labels):
             # Select projected vectors (f) of the current class
             class_reduced_features = reduced_features[train_labels == label]
@@ -72,7 +74,7 @@ class IrisMatcher:
             elif metric == "L2":
                 distance = np.sum((f - center) ** 2) # np.sqrt(np.sum((f - center) ** 2))
             elif metric == "COSINE":
-                distance = 1 - np.dot(np.transpose(f), center) / (np.linalg.norm(f) * np.linalg.norm(center))
+                distance = 1 - np.dot(f.T, center) / (np.linalg.norm(f) * np.linalg.norm(center))
             else:
                 return print("WARN: Wrong input for metric")
             
