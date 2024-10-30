@@ -51,8 +51,9 @@ class FeatureExtractor:
         self.roi_width = 512
         self.rotation_angles = [-9, -6, -3, 0, 3, 6, 9]
 
-        self.kernel_size = 31   # can be tuned
-        self.f = 0.1            # can be tuned
+        # [BEST] 18, 0.08 with normalization
+        self.kernel_size = 18   # can be tuned
+        self.f = 0.08           # can be tuned
         self.block_size = 8
 
         # First Channel
@@ -65,6 +66,14 @@ class FeatureExtractor:
 
         self.features = []
 
+    def normalize_features(self, features):
+        features = np.array(features)
+        mean = features.mean()
+        std = features.std() if features.std() != 0 else 1  # Avoid division by zero
+        normalized_features = (features - mean) / std
+
+        return normalized_features
+    
     def rotate_enhanced_image(self, image, angle):
         """
         Rotates the given image by the specified angle.
@@ -186,7 +195,11 @@ class FeatureExtractor:
 
             # Combine the features from both channels
             features_vector = filtered_roi1_features + filtered_roi2_features
-            self.features.append(features_vector)
+            # self.features.append(features_vector)
+
+            # [ADDED] Normalize the feature
+            normalized_features = self.normalize_features(features_vector)
+            self.features.append(normalized_features)
             
             # features_and_angle = (features, angle)
             # self.features.append(features_and_angle)
