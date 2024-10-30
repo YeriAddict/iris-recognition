@@ -52,7 +52,7 @@ class FeatureExtractor:
         self.rotation_angles = [-9, -6, -3, 0, 3, 6, 9]
 
         # [BEST] 18, 0.08 with normalization
-        self.kernel_size = 18   # can be tuned
+        self.kernel_size = 21   # can be tuned
         self.f = 0.08           # can be tuned
         self.block_size = 8
 
@@ -67,10 +67,15 @@ class FeatureExtractor:
         self.features = []
 
     def normalize_features(self, features):
-        features = np.array(features)
-        mean = features.mean()
-        std = features.std() if features.std() != 0 else 1  # Avoid division by zero
-        normalized_features = (features - mean) / std
+        means = features[::2]
+        absolute_average_deviations = features[1::2]
+
+        normalized_means = (means - np.mean(means)) / np.std(means)
+        normalized_aads = (absolute_average_deviations - np.mean(absolute_average_deviations)) / np.std(absolute_average_deviations)
+
+        normalized_features = np.empty_like(features)
+        normalized_features[::2] = normalized_means
+        normalized_features[1::2] = normalized_aads 
 
         return normalized_features
     
