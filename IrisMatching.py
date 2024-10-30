@@ -22,7 +22,7 @@ class IrisMatcher:
     """
     
     def __init__(self, num_classes):
-        self.lda = LinearDiscriminantAnalysis(n_components=min(num_classes - 1, 1536))
+        self.lda = LinearDiscriminantAnalysis(n_components=min(num_classes - 1, 1536), solver="eigen", shrinkage="auto")
         self.class_centers = {}
 
     def fit(self, train_features, train_labels):

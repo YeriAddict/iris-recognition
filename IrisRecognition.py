@@ -74,7 +74,7 @@ class DataLoader:
 
         return self.training, self.testing
 
-class IrisRecognizer:
+class IrisPipeline:
     def __init__(self, dataset):
         self.dataset = dataset
 
@@ -158,101 +158,124 @@ class IrisRecognizer:
 
             self.enhanced_images.append((enhanced_image, original_image_path))
 
-    def extract_irises_features(self, mode):
+    def extract_irises_features(self, rotation_angles, kernel_size, f, mode):
         for enhanced_image, original_image_path in self.enhanced_images:
-            feature_extractor = FeatureExtractor(enhanced_image)
+            feature_extractor = FeatureExtractor(enhanced_image, rotation_angles, kernel_size, f)
             features = feature_extractor.extract_features()
             label = os.path.normpath(original_image_path).split(os.sep)[1]
 
             self.features_vectors += features
-            if mode == "train":
-                self.labels.append(label)
-                self.labels.append(label)
-                self.labels.append(label)
-                self.labels.append(label)
-                self.labels.append(label)
-                self.labels.append(label)
-                self.labels.append(label)
-            elif mode == "test":
+            if mode == "Train":
+                for _ in range(len(rotation_angles)):
+                    self.labels.append(label)
+            elif mode == "Test":
                 self.labels.append(label)
             else:
                 print("Warn: Wrong mode")
 
+class IrisRecognitionModel:
+    def __init__(self, training, testing, kernel_size, f, rotation_angles = [-9, -6, -3, 0, 3, 6, 9], n_classes=108, n_angles=7):
+        # Public attributes
+        self.training = training
+        self.testing = testing
+        self.kernel_size = kernel_size
+        self.f = f 
+
+        # Private attributes
+        self.__rotation_angles = rotation_angles
+        self.__n_classes = n_classes
+        self.__n_angles = n_angles
+        self.__training_mode = "Train"
+        self.__testing_mode = "Test"
+        self.__iris_matcher = IrisMatcher(self.__n_classes)
+        self.__performance_evaluator = PerformanceEvaluator(len(self.testing))
+
+    def extract_features_and_labels(self):
+        # Training
+        training_iris_pipeline = IrisPipeline(self.training)
+        training_iris_pipeline.localize_irises()
+        training_iris_pipeline.normalize_irises()
+        training_iris_pipeline.illuminate_irises()
+        training_iris_pipeline.enhance_irises()
+        training_iris_pipeline.extract_irises_features(self.__rotation_angles, self.kernel_size, self.f, self.__training_mode)
+        training_features = training_iris_pipeline.features_vectors
+        training_labels = training_iris_pipeline.labels
+
+        # Testing
+        testing_iris_pipeline = IrisPipeline(self.testing)
+        testing_iris_pipeline.localize_irises()
+        testing_iris_pipeline.normalize_irises()
+        testing_iris_pipeline.illuminate_irises()
+        testing_iris_pipeline.enhance_irises()
+        testing_iris_pipeline.extract_irises_features(self.__rotation_angles, self.kernel_size, self.f, self.__testing_mode)
+        testing_features = testing_iris_pipeline.features_vectors
+        testing_labels = testing_iris_pipeline.labels
+
+        return training_features, testing_features, training_labels, testing_labels
+
+    def fit(self, training_features, training_labels):
+        self.__iris_matcher.fit(training_features, training_labels)
+
+    def predict(self, testing_features):
+        predicted_labels = {}
+        predicted_labels["L1"] = []
+        predicted_labels["L2"] = []
+        predicted_labels["COSINE"] = []
+
+        for i in range(0, len(testing_features), self.__n_angles):
+            class_features = testing_features[i:i+self.__n_angles]
+            best_d1, best_d2, best_d3 = float("inf"), float("inf"), float("inf")
+            best_d1_label, best_d2_label, best_d3_label = "", "", ""
+            
+            for features_vector in class_features:
+                d1_label, d1 = self.__iris_matcher.match(features_vector, "L1")
+                d2_label, d2 = self.__iris_matcher.match(features_vector, "L2")
+                d3_label, d3 = self.__iris_matcher.match(features_vector, "COSINE")
+                
+                if d1 < best_d1:
+                    best_d1 = d1
+                    best_d1_label = d1_label
+                if d2 < best_d2:
+                    best_d2 = d2
+                    best_d2_label = d2_label
+                if d3 < best_d3:
+                    best_d3 = d3
+                    best_d3_label = d3_label
+
+            predicted_labels["L1"].append(best_d1_label)
+            predicted_labels["L2"].append(best_d2_label)
+            predicted_labels["COSINE"].append(best_d3_label)
+
+        return predicted_labels
+    
+    def evaluate(self, testing_labels, predicted_labels):
+        crr = {}
+        crr["L1"] = self.__performance_evaluator.calculate_crr(testing_labels, predicted_labels["L1"])
+        crr["L2"] = self.__performance_evaluator.calculate_crr(testing_labels, predicted_labels["L2"])
+        crr["COSINE"] = self.__performance_evaluator.calculate_crr(testing_labels, predicted_labels["COSINE"])
+
+        return crr  
 
 def main():
+    # Tunable parameters
+    kernel_size = 21 # Can be tuned
+    f = 0.08         # Can be tuned
+
     training, testing = DataLoader.create().load()
-    # Training
-    training_iris_recognizer = IrisRecognizer(training)
-    training_iris_recognizer.localize_irises()
-    training_iris_recognizer.normalize_irises()
-    training_iris_recognizer.illuminate_irises()
-    training_iris_recognizer.enhance_irises()
-    training_iris_recognizer.extract_irises_features("train")
 
-    # Ouput of training_features_vectors: [[],[],...] (2268, )
-    training_features_vectors = training_iris_recognizer.features_vectors
-    training_labels = training_iris_recognizer.labels # (2268, )
+    iris_model = IrisRecognitionModel(training, testing, kernel_size, f)
 
-    training_iris_matching = IrisMatcher(108)
-    training_iris_matching.fit(training_features_vectors, training_labels)
+    X_train, X_test, y_train, y_test = iris_model.extract_features_and_labels()
 
-    # Prediction
-    # Testing
-    testing_iris_recognizer = IrisRecognizer(testing)
-    testing_iris_recognizer.localize_irises()
-    testing_iris_recognizer.normalize_irises()
-    testing_iris_recognizer.illuminate_irises()
-    testing_iris_recognizer.enhance_irises()
-    testing_iris_recognizer.extract_irises_features("test")
+    iris_model.fit(X_train, y_train)
 
-    # Ouput of testing_features_vectors: [[(vector1, angle1), (vector2, angle2), ...],[],[],...,[]]
-    testing_features_vectors = testing_iris_recognizer.features_vectors
-    testing_labels = testing_iris_recognizer.labels
+    y_pred = iris_model.predict(X_test)
 
-    d1_predicting_labels = []
-    d2_predicting_labels = []
-    d3_predicting_labels = []
+    crr = iris_model.evaluate(y_test, y_pred)
 
-    # Prediction - matching
-    for i in range(0, len(testing_features_vectors), 7):
-        window = testing_features_vectors[i:i+7]
-        best_d1, best_d2, best_d3 = float("inf"), float("inf"), float("inf")
-        best_label_d1, best_label_d2, best_label_d3 = "", "", ""
-        
-        for v in window:
-            d1_best_label, d1_best_dist = training_iris_matching.match(v, "L1")
-            d2_best_label, d2_best_dist = training_iris_matching.match(v, "L2")
-            d3_best_label, d3_best_dist = training_iris_matching.match(v, "COSINE")
-            
-            if d1_best_dist < best_d1:
-                best_d1 = d1_best_dist
-                best_label_d1 = d1_best_label
-            if d2_best_dist < best_d2:
-                best_d2 = d2_best_dist
-                best_label_d2 = d2_best_label
-            if d3_best_dist < best_d3:
-                best_d3 = d3_best_dist
-                best_label_d3 = d3_best_label
-
-        d1_predicting_labels.append(best_label_d1)
-        d2_predicting_labels.append(best_label_d2)
-        d3_predicting_labels.append(best_label_d3)
-
-    # Performance Check
-    print("============= CRR:")
-    n_classes = len(testing_labels)
-    performance_evaluator = PerformanceEvaluator(n_classes)
-    d1_crr = performance_evaluator.calculate_crr(testing_labels, d1_predicting_labels)
-    d2_crr = performance_evaluator.calculate_crr(testing_labels, d2_predicting_labels)
-    d3_crr = performance_evaluator.calculate_crr(testing_labels, d3_predicting_labels)
-   
-    print("L1 distance measure | ", d1_crr)
-    print("L2 distance measure | ", d2_crr)
-    print("Cosine distance measure | ", d3_crr)
-
-    print(d1_predicting_labels[:10], "\n")
-    print(testing_labels[:10])
-    print(len(d1_predicting_labels), len(testing_labels)) # 432, 432
+    print("L1 distance measure | ", crr["L1"])
+    print("L2 distance measure | ", crr["L2"])
+    print("Cosine distance measure | ", crr["COSINE"])      
 
 if __name__ == "__main__":
     main()
