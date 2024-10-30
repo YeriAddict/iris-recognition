@@ -6,6 +6,7 @@ from IrisNormalization import IrisNormalizer
 from ImageEnhancement import IrisIlluminater, IrisEnhancer
 from FeatureExtraction import FeatureExtractor
 from IrisMatching import IrisMatcher
+from PerformanceEvaluation import PerformanceEvaluator
 
 # Global constants
 INPUT_FOLDER = "input"
@@ -239,13 +240,15 @@ def main():
 
     # Performance Check
     print("============= CRR:")
-    d1_crr = sum(1 for true_label, predict_label in zip(testing_labels, d1_predicting_labels) if true_label == predict_label) / len(testing_labels)
-    d2_crr = sum(1 for true_label, predict_label in zip(testing_labels, d2_predicting_labels) if true_label == predict_label) / len(testing_labels)
-    d3_crr = sum(1 for true_label, predict_label in zip(testing_labels, d3_predicting_labels) if true_label == predict_label) / len(testing_labels)
+    n_classes = len(testing_labels)
+    performance_evaluator = PerformanceEvaluator(n_classes)
+    d1_crr = performance_evaluator.calculate_crr(testing_labels, d1_predicting_labels)
+    d2_crr = performance_evaluator.calculate_crr(testing_labels, d2_predicting_labels)
+    d3_crr = performance_evaluator.calculate_crr(testing_labels, d3_predicting_labels)
    
-    print("L1 distance measure | ", d1_crr*100)
-    print("L2 distance measure | ", d2_crr*100)
-    print("Cosine distance measure | ", d3_crr*100)
+    print("L1 distance measure | ", d1_crr)
+    print("L2 distance measure | ", d2_crr)
+    print("Cosine distance measure | ", d3_crr)
 
     print(d1_predicting_labels[:10], "\n")
     print(testing_labels[:10])
