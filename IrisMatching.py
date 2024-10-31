@@ -83,3 +83,13 @@ class IrisMatcher:
                 best_label = label
 
         return best_label, best_distance
+    
+    def match_pair(self, feature_vector_1, feature_vector_2):
+        f1 = self.lda.transform([feature_vector_1])[0]
+        f2 = self.lda.transform([feature_vector_2])[0]
+
+        l1 = np.sum(np.abs(f1 - f2))
+        l2 = np.sum((f1 - f2) ** 2)
+        cosine = 1 - np.dot(f1.T, f2) / (np.linalg.norm(f1) * np.linalg.norm(f2))
+
+        return l1, l2, cosine
