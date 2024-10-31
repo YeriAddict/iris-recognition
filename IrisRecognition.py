@@ -270,6 +270,14 @@ class IrisRecognitionModel:
             similarity_scores["L2"].append(l2)
             similarity_scores["COSINE"].append(cos)
 
+        similarity_scores["L1"] = np.array(similarity_scores["L1"])
+        similarity_scores["L2"] = np.array(similarity_scores["L2"])
+        similarity_scores["COSINE"] = np.array(similarity_scores["COSINE"])
+
+        similarity_scores["L1"] = (similarity_scores["L1"] - np.mean(similarity_scores["L1"])) / np.std(similarity_scores["L1"])
+        similarity_scores["L2"] = (similarity_scores["L2"] - np.mean(similarity_scores["L2"])) / np.std(similarity_scores["L2"])
+        similarity_scores["COSINE"] = (similarity_scores["COSINE"] - np.mean(similarity_scores["COSINE"])) / np.std(similarity_scores["COSINE"])
+
         return similarity_scores
 
 
@@ -281,7 +289,7 @@ class IrisRecognitionModel:
 
         return crr  
     
-def create_pairs(features, labels, num_genuine_pairs=1000, num_impostor_pairs=1000):
+def create_pairs(features, labels, num_genuine_pairs=10000, num_impostor_pairs=10000):
     """
     Creates genuine and impostor pairs from the given features and labels.
     
@@ -337,7 +345,6 @@ def calculate_fmr_fnmr(similarity_scores, pair_labels, threshold):
     total_non_matches = 0
     
     for score, label in zip(similarity_scores, pair_labels):
-        print(score)
         if label == 0:  # Impostor pair
             total_non_matches += 1
             if score <= threshold:  # Incorrect match
@@ -347,7 +354,6 @@ def calculate_fmr_fnmr(similarity_scores, pair_labels, threshold):
             if score > threshold:  # Incorrect non-match
                 false_non_matches += 1
 
-    # Calculate FMR and FNMR
     fmr = false_matches / total_non_matches if total_non_matches > 0 else 0
     fnmr = false_non_matches / total_matches if total_matches > 0 else 0
     
@@ -372,46 +378,56 @@ def main():
 
     crr = iris_model.evaluate(y_test, y_pred_identify)
 
-    print("L1 distance measure | ", crr["L1"])
-    print("L2 distance measure | ", crr["L2"])
-    print("Cosine distance measure | ", crr["COSINE"])
+    print("L1 distance measure | ", crr["L1"], "%")
+    print("L2 distance measure | ", crr["L2"], "%")
+    print("Cosine distance measure | ", crr["COSINE"], "%")
 
     # Verification mode
     # Generate pairs of features (genuine and impostor)
-    num_genuine_pairs = 1000
-    num_impostor_pairs = 1000
+    num_genuine_pairs = 10000
+    num_impostor_pairs = 10000
     pairs, pair_labels = create_pairs(X_test, np.array(y_test), num_genuine_pairs, num_impostor_pairs)
     
     y_pred_verify = iris_model.verify(pairs)
     
     # Calculate FMR and FNMR for each threshold per metric
+    plt.figure(figsize=(15, 5))
+
+    # L1 metric plot
+    plt.subplot(1, 3, 1)
     for threshold in thresholds:
         fmr, fnmr = calculate_fmr_fnmr(y_pred_verify["L1"], pair_labels, threshold)
         print(f"Metric: L1 | Threshold: {threshold} | FMR: {fmr * 100} % | FNMR: {fnmr * 100} %")
+        plt.plot(fmr, fnmr, label=f'Threshold: {threshold}')
+    plt.xlabel("FMR")
+    plt.ylabel("FNMR")
+    plt.title("L1 Metric")
+    plt.legend()
 
+    # L2 metric plot
+    plt.subplot(1, 3, 2)
     for threshold in thresholds:
         fmr, fnmr = calculate_fmr_fnmr(y_pred_verify["L2"], pair_labels, threshold)
-        print(f"Metric: L2 | Threshold: {threshold} | FMR: {fmr:.4f} | FNMR: {fnmr:.4f}")
-    
+        print(f"Metric: L2 | Threshold: {threshold} | FMR: {fmr * 100} % | FNMR: {fnmr * 100} %")
+        plt.plot(fmr, fnmr, label=f'Threshold: {threshold}')
+    plt.xlabel("FMR")
+    plt.ylabel("FNMR")
+    plt.title("L2 Metric")
+    plt.legend()
+
+    # COSINE metric plot
+    plt.subplot(1, 3, 3)
     for threshold in thresholds:
         fmr, fnmr = calculate_fmr_fnmr(y_pred_verify["COSINE"], pair_labels, threshold)
-        print(f"Metric: COSINE | Threshold: {threshold} | FMR: {fmr:.4f} | FNMR: {fnmr:.4f}")
+        print(f"Metric: COSINE | Threshold: {threshold} | FMR: {fmr * 100} % | FNMR: {fnmr * 100} %")
+        plt.plot(fmr, fnmr, label=f'Threshold: {threshold}')
+    plt.xlabel("FMR")
+    plt.ylabel("FNMR")
+    plt.title("Cosine Metric")
+    plt.legend()
 
-    # Generate ROC curves for each similarity measure
-    # for metric, scores in y_pred_verify.items():
-    #     fpr, tpr, _ = roc_curve(pair_labels, scores, pos_label=1)
-    #     roc_auc = auc(fpr, tpr)
-    #     plt.plot(fpr, tpr, lw=2, label=f'{metric} (AUC = {roc_auc:.2f})')
-
-    # # Plot ROC curve
-    # plt.plot([0, 1], [0, 1], 'k--', lw=2)
-    # plt.xlim([0.0, 1.0])
-    # plt.ylim([0.0, 1.05])
-    # plt.xlabel('False Positive Rate')
-    # plt.ylabel('True Positive Rate')
-    # plt.title('Receiver Operating Characteristic (ROC) - Verification Mode')
-    # plt.legend(loc="lower right")
-    # plt.show()
+    plt.tight_layout()
+    plt.show()
 
 if __name__ == "__main__":
     main()
