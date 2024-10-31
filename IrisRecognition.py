@@ -337,13 +337,14 @@ def calculate_fmr_fnmr(similarity_scores, pair_labels, threshold):
     total_non_matches = 0
     
     for score, label in zip(similarity_scores, pair_labels):
+        print(score)
         if label == 0:  # Impostor pair
             total_non_matches += 1
-            if score >= threshold:  # Incorrect match
+            if score <= threshold:  # Incorrect match
                 false_matches += 1
         else:  # Genuine pair
             total_matches += 1
-            if score < threshold:  # Incorrect non-match
+            if score > threshold:  # Incorrect non-match
                 false_non_matches += 1
 
     # Calculate FMR and FNMR
@@ -367,26 +368,26 @@ def main():
     iris_model.fit(X_train, y_train)
 
     # Identification mode
-    # y_pred_identify = iris_model.identify(X_test)
+    y_pred_identify = iris_model.identify(X_test)
 
-    # crr = iris_model.evaluate(y_test, y_pred_identify)
+    crr = iris_model.evaluate(y_test, y_pred_identify)
 
-    # print("L1 distance measure | ", crr["L1"])
-    # print("L2 distance measure | ", crr["L2"])
-    # print("Cosine distance measure | ", crr["COSINE"])
+    print("L1 distance measure | ", crr["L1"])
+    print("L2 distance measure | ", crr["L2"])
+    print("Cosine distance measure | ", crr["COSINE"])
 
     # Verification mode
     # Generate pairs of features (genuine and impostor)
     num_genuine_pairs = 1000
     num_impostor_pairs = 1000
     pairs, pair_labels = create_pairs(X_test, np.array(y_test), num_genuine_pairs, num_impostor_pairs)
-
+    
     y_pred_verify = iris_model.verify(pairs)
-
+    
     # Calculate FMR and FNMR for each threshold per metric
     for threshold in thresholds:
         fmr, fnmr = calculate_fmr_fnmr(y_pred_verify["L1"], pair_labels, threshold)
-        print(f"Metric: L1 | Threshold: {threshold} | FMR: {fmr:.4f} | FNMR: {fnmr:.4f}")
+        print(f"Metric: L1 | Threshold: {threshold} | FMR: {fmr * 100} % | FNMR: {fnmr * 100} %")
 
     for threshold in thresholds:
         fmr, fnmr = calculate_fmr_fnmr(y_pred_verify["L2"], pair_labels, threshold)

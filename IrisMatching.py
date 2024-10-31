@@ -85,6 +85,9 @@ class IrisMatcher:
         return best_label, best_distance
     
     def match_pair(self, feature_vector_1, feature_vector_2):
+        feature_vector_1 = np.array(feature_vector_1)
+        feature_vector_2 = np.array(feature_vector_2)
+
         f1 = self.lda.transform([feature_vector_1])[0]
         f2 = self.lda.transform([feature_vector_2])[0]
 
