@@ -42,17 +42,20 @@ class FeatureExtractor:
             Applies the Gabor filter to the region of interest (ROI).
         extract_features_from_roi(filtered_roi):
             Extracts features from the filtered ROI by dividing it into blocks and calculating the mean and average absolute deviation for each block.
+        normalize_features(features):
+            Normalizes the extracted features by subtracting the mean and dividing by the standard deviation
         extract_features():
             Extracts features from the iris image by applying Gabor filters to the ROI and combining the features from both channels.
     """
-    def __init__(self, image):
+    def __init__(self, image, rotation_angles, kernel_size, f):
         self.image = image
         self.roi_height = 48
         self.roi_width = 512
-        self.rotation_angles = [-9, -6, -3, 0, 3, 6, 9]
+        self.rotation_angles = rotation_angles
 
-        self.kernel_size = 31
-        self.f = 0.1
+        # Gabor filter parameters
+        self.kernel_size = kernel_size
+        self.f = f
         self.block_size = 8
 
         # First Channel
@@ -64,7 +67,7 @@ class FeatureExtractor:
         self.delta_y2 = 1.5
 
         self.features = []
-
+    
     def rotate_enhanced_image(self, image, angle):
         """
         Rotates the given image by the specified angle.
@@ -103,7 +106,7 @@ class FeatureExtractor:
         M1 = np.cos(2 * np.pi * f * np.sqrt(x**2 + y**2))
 
         # Define the Gaussian envelope
-        gabor_kernel = (1/(2 * np.pi * delta_x * delta_y)) * np.exp(-0.5 * ((x**2 / delta_x**2) + (y**2 / delta_y**2))) * M1
+        gabor_kernel = (1/(2 * np.pi * delta_x * delta_y)) * np.exp(-0.5 * (((x**2) / (delta_x**2)) + ((y**2) / (delta_y**2)))) * M1
 
         return gabor_kernel
 
@@ -119,6 +122,7 @@ class FeatureExtractor:
         Returns:
             numpy.ndarray: The filtered region of interest.
         """
+        # Source: https://www.geeksforgeeks.org/opencv-getgaborkernel-method/
         # Create a grid for generating the kernel
         center = self.kernel_size // 2
         x = np.arange(-center, center + 1)
@@ -155,6 +159,33 @@ class FeatureExtractor:
                 features.append(feature[1])
         return features
 
+    def normalize_features(self, features):
+        """
+        Normalizes the extracted features by subtracting the mean and dividing by the standard deviation.
+
+        Parameters:
+            features (numpy.ndarray): The extracted features to be normalized.
+
+        Returns:
+            numpy.ndarray: The normalized features.
+        """
+        # The means are at even indices
+        means = features[::2]
+
+        # The average absolute deviations are at odd indices
+        absolute_average_deviations = features[1::2]
+
+        # Normalize the features
+        normalized_means = (means - np.mean(means)) / np.std(means)
+        normalized_aads = (absolute_average_deviations - np.mean(absolute_average_deviations)) / np.std(absolute_average_deviations)
+
+        # Combine the normalized features
+        normalized_features = np.empty_like(features)
+        normalized_features[::2] = normalized_means
+        normalized_features[1::2] = normalized_aads 
+
+        return normalized_features
+
     def extract_features(self):
         """
         Extracts features from the region of interest (ROI) of the enhanced iris image.
@@ -164,12 +195,14 @@ class FeatureExtractor:
         2. Applies two different filters to the ROI.
         3. Extracts features from the filtered ROIs.
         4. Combines the features from both filtered ROIs.
+        5. Normalizes the features.
 
         Returns:
-            list: A list of tuples of the format: (features, angle) for a total of 7 angles.
+            list: A list of lists of features (there are as many vectors as the number of rotation angles).
         """
         
         for angle in self.rotation_angles:
+            # Rotate the enhanced image by the specified angle
             rotated_image = self.rotate_enhanced_image(self.image, angle)
 
             # Extract the region of interest (ROI) from the enhanced iris image
@@ -184,9 +217,10 @@ class FeatureExtractor:
             filtered_roi2_features = self.extract_features_from_roi(filtered_roi2)
 
             # Combine the features from both channels
-            features = filtered_roi1_features + filtered_roi2_features
+            features_vector = filtered_roi1_features + filtered_roi2_features
 
-            features_and_angle = (features, angle)
-            self.features.append(features_and_angle)
+            # Normalize the feature
+            normalized_features = self.normalize_features(features_vector)
+            self.features.append(normalized_features)
 
         return self.features
