@@ -29,3 +29,34 @@ class PerformanceEvaluator:
         correct_recognition_rate = (sum(1 for true_label, predict_label in zip(labels, predicted_labels) if true_label == predict_label) / self.n_classes) * 100
         return correct_recognition_rate
 
+    def calculate_fmr(self, verification_results):
+        """
+        Calculates the False Match Rate (FMR).
+        The FMR is the percentage of impostor attempts that are incorrectly accepted as genuine matches.
+
+        Parameters:
+            verification_results (dict): A dictionary containing the verification results with the following keys:
+                - "false_matches" (int): The number of impostor matches incorrectly classified as matches.
+                - "total_impostor_matches" (int): The total number of impostor match attempts.
+        
+        Returns:
+            float: The False Match Rate (FMR) as a percentage.
+        """
+        false_match_rate = (verification_results["false_matches"] / verification_results["total_impostor_matches"]) * 100
+        return false_match_rate
+
+    def calculate_fnmr(self, verification_results):
+        """
+        Calculates the False Non-Match Rate (FNMR).
+        The FNMR is the percentage of genuine matches that are incorrectly classified as non-matches.
+        
+        Parameters:
+            verification_results (dict): A dictionary containing the verification results with the following keys:
+                - "false_non_matches" (int): The number of genuine matches incorrectly classified as non-matches.
+                - "total_genuine_matches" (int): The total number of genuine match attempts.
+        Returns:
+            float: The False Non-Match Rate (FNMR) as a percentage.
+        """
+
+        false_non_match_rate = (verification_results["false_non_matches"] / verification_results["total_genuine_matches"]) * 100
+        return false_non_match_rate

@@ -25,6 +25,29 @@ class IrisMatcher:
         self.lda = LinearDiscriminantAnalysis(n_components=min(num_classes - 1, 1536), solver="eigen", shrinkage="auto")
         self.class_centers = {}
 
+    def __calculate_distance(self, f, center, metric):
+        """
+        Calculates the distance between a feature vector and a class center in the reduced space.
+
+        Parameters:
+            f : array-like, shape (n_features,)
+                The feature vector to compare.
+            center : array-like, shape (n_features,)
+                The class center in the reduced space.
+            metric : string, either L1, L2, or COSINE
+        
+        Returns:
+            float: The distance between the feature vector and the class center.
+        """    
+        if metric == "L1":
+            return np.sum(np.abs(f - center))
+        elif metric == "L2":
+            return np.sqrt(np.sum((f - center) ** 2))
+        elif metric == "COSINE":
+            return 1 - np.dot(f, center) / (np.linalg.norm(f) * np.linalg.norm(center))
+        else:
+            raise ValueError("Invalid metric")
+
     def fit(self, train_features, train_labels):
         """
         Fits the LDA model using the training features and labels.
@@ -48,7 +71,7 @@ class IrisMatcher:
             # Calculate the mean vector for this class in reduced space
             self.class_centers[label] = np.mean(class_reduced_features, axis=0)
 
-    def match(self, feature_vector, metric):
+    def match(self, feature_vector, metric, claimed_class=None):
         """
         Matches an input feature vector to a class using the nearest center classifier.
         
@@ -64,35 +87,24 @@ class IrisMatcher:
         # Project the feature vector into the reduced space using the existing projection matrix
         f = self.lda.transform([feature_vector])[0]
 
-        best_label = None
-        best_distance = float('inf')
+        if claimed_class is not None:
+            ## Verification mode (One-to-One Matching)
 
-        # Measure distances (d1, d2, d3) to each class center
-        for label, center in self.class_centers.items():
-            if metric == "L1":
-                distance = np.sum(np.abs(f - center)) 
-            elif metric == "L2":
-                distance = np.sum((f - center) ** 2) # np.sqrt(np.sum((f - center) ** 2))
-            elif metric == "COSINE":
-                distance = 1 - np.dot(f.T, center) / (np.linalg.norm(f) * np.linalg.norm(center))
-            else:
-                return print("WARN: Wrong input for metric")
-            
-            if distance < best_distance:
-                best_distance = distance
-                best_label = label
+            # Calculate the distance between the projected feature vector and the claimed class center
+            center = self.class_centers[claimed_class]
+            distance = self.__calculate_distance(f, center, metric)
 
-        return best_label, best_distance
-    
-    def match_pair(self, feature_vector_1, feature_vector_2):
-        feature_vector_1 = np.array(feature_vector_1)
-        feature_vector_2 = np.array(feature_vector_2)
+            return distance
+        else:
+            ## Identification mode (One-to-Many Matching)
 
-        f1 = self.lda.transform([feature_vector_1])[0]
-        f2 = self.lda.transform([feature_vector_2])[0]
+            # Find the closest class center to the projected feature vector
+            best_label = None
+            best_distance = float('inf')
+            for label, center in self.class_centers.items():
+                distance = self.__calculate_distance(f, center, metric)
+                if distance < best_distance:
+                    best_distance = distance
+                    best_label = label
 
-        l1 = np.sum(np.abs(f1 - f2))
-        l2 = np.sum((f1 - f2) ** 2)
-        cosine = 1 - np.dot(f1.T, f2) / (np.linalg.norm(f1) * np.linalg.norm(f2))
-
-        return l1, l2, cosine
+            return best_label, best_distance

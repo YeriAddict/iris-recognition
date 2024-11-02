@@ -1,10 +1,6 @@
 import os
-import cv2
 import random
-import numpy as np
-
-from sklearn.metrics import roc_curve, auc
-import matplotlib.pyplot as plt
+import cv2
 
 from IrisLocalization import IrisLocalizer
 from IrisNormalization import IrisNormalizer
@@ -179,12 +175,13 @@ class IrisPipeline:
                 print("Warn: Wrong mode")
 
 class IrisRecognitionModel:
-    def __init__(self, training, testing, kernel_size, f, rotation_angles = [-9, -6, -3, 0, 3, 6, 9], n_classes=108, n_angles=7):
+    def __init__(self, training, testing, kernel_size, f, thresholds, rotation_angles = [-9, -6, -3, 0, 3, 6, 9], n_classes=108, n_angles=7):
         # Public attributes
         self.training = training
         self.testing = testing
         self.kernel_size = kernel_size
-        self.f = f 
+        self.f = f
+        self.thresholds = thresholds
 
         # Private attributes
         self.__rotation_angles = rotation_angles
@@ -252,182 +249,92 @@ class IrisRecognitionModel:
             predicted_labels["COSINE"].append(best_d3_label)
 
         return predicted_labels
-    
-    def verify(self, testing_pairs):
-        # Calculate similarity scores for each pair (L1, L2, Cosine)
-        similarity_scores = {
-            "L1": [],
-            "L2": [],
-            "COSINE": []
-        }
 
-        for pair in testing_pairs:
-            # Unpack the feature vectors from each pair
-            feature_vector1, feature_vector2 = pair
-            l1, l2, cos = self.__iris_matcher.match_pair(feature_vector1, feature_vector2)
-            
-            similarity_scores["L1"].append(l1)
-            similarity_scores["L2"].append(l2)
-            similarity_scores["COSINE"].append(cos)
+    def verify(self, testing_features, testing_labels):
+        verification_results = {}
+        verification_results["COSINE"] = {}
+        for threshold in self.thresholds:
+            verification_results["COSINE"][threshold] = {"false_matches": 0, "false_non_matches": 0, "total_genuine_matches": 0, "total_impostor_matches": 0}
 
-        similarity_scores["L1"] = np.array(similarity_scores["L1"])
-        similarity_scores["L2"] = np.array(similarity_scores["L2"])
-        similarity_scores["COSINE"] = np.array(similarity_scores["COSINE"])
+        new_testing_labels = []
+        for k in range(len(testing_labels)):
+            for _ in range(self.__n_angles):
+                new_testing_labels.append(testing_labels[k])
 
-        similarity_scores["L1"] = (similarity_scores["L1"] - np.mean(similarity_scores["L1"])) / np.std(similarity_scores["L1"])
-        similarity_scores["L2"] = (similarity_scores["L2"] - np.mean(similarity_scores["L2"])) / np.std(similarity_scores["L2"])
-        similarity_scores["COSINE"] = (similarity_scores["COSINE"] - np.mean(similarity_scores["COSINE"])) / np.std(similarity_scores["COSINE"])
+        for features_vector, true_label in zip(testing_features, new_testing_labels):
+            d3 = self.__iris_matcher.match(features_vector, "COSINE", true_label)
 
-        return similarity_scores
+            for threshold in self.thresholds:
 
+                if d3 > threshold:
+                    verification_results["COSINE"][threshold]["false_non_matches"] += 1
+                
+                verification_results["COSINE"][threshold]["total_genuine_matches"] += 1
 
-    def evaluate(self, testing_labels, predicted_labels):
+            impostor_labels = list(self.__iris_matcher.class_centers.keys())
+            impostor_labels.remove(true_label)
+            impostor_label = random.choice(impostor_labels)
+
+            if impostor_label != true_label:
+                d3_imposter = self.__iris_matcher.match(features_vector, "COSINE", claimed_class=impostor_label)
+
+                for threshold in self.thresholds:
+
+                    if d3_imposter < threshold:
+                        verification_results["COSINE"][threshold]["false_matches"] += 1
+
+                    verification_results["COSINE"][threshold]["total_impostor_matches"] += 1
+
+        return verification_results
+
+    def evaluate_crr(self, testing_labels, predicted_labels):
         crr = {}
         crr["L1"] = self.__performance_evaluator.calculate_crr(testing_labels, predicted_labels["L1"])
         crr["L2"] = self.__performance_evaluator.calculate_crr(testing_labels, predicted_labels["L2"])
         crr["COSINE"] = self.__performance_evaluator.calculate_crr(testing_labels, predicted_labels["COSINE"])
 
-        return crr  
+        return crr
     
-def create_pairs(features, labels, num_genuine_pairs=10000, num_impostor_pairs=10000):
-    """
-    Creates genuine and impostor pairs from the given features and labels.
-    
-    Parameters:
-        features (np.ndarray): Projected feature vectors (after applying LDA).
-        labels (np.ndarray): Corresponding class labels for each feature vector.
-        num_genuine_pairs (int): Number of genuine pairs to create.
-        num_impostor_pairs (int): Number of impostor pairs to create.
-    
-    Returns:
-        pairs (list of tuple): List of pairs of feature vectors.
-        pair_labels (list of int): Labels for each pair (1 for genuine, 0 for impostor).
-    """
-    pairs = []
-    pair_labels = []
-    
-    # Dictionary to group features by their label
-    label_to_indices = {label: np.where(labels == label)[0] for label in np.unique(labels)}
-    
-    # Generate Genuine Pairs
-    for _ in range(num_genuine_pairs):
-        label = random.choice(list(label_to_indices.keys()))
-        i, j = np.random.choice(label_to_indices[label], 2, replace=False)
-        pairs.append((features[i], features[j]))
-        pair_labels.append(1)  # Label 1 for genuine pairs
-
-    # Generate Impostor Pairs
-    for _ in range(num_impostor_pairs):
-        label1, label2 = np.random.choice(list(label_to_indices.keys()), 2, replace=False)
-        i = np.random.choice(label_to_indices[label1])
-        j = np.random.choice(label_to_indices[label2])
-        pairs.append((features[i], features[j]))
-        pair_labels.append(0)  # Label 0 for impostor pairs
-
-    return pairs, pair_labels
-
-def calculate_fmr_fnmr(similarity_scores, pair_labels, threshold):
-    """
-    Calculates False Match Rate (FMR) and False Non-Match Rate (FNMR) for a given threshold.
-    
-    Parameters:
-        similarity_scores (list): List of similarity scores for the pairs.
-        pair_labels (list): List of true labels for the pairs (1 for genuine, 0 for impostor).
-        threshold (float): The threshold to evaluate the FMR and FNMR.
-    
-    Returns:
-        fmr (float): False Match Rate.
-        fnmr (float): False Non-Match Rate.
-    """
-    false_matches = 0
-    false_non_matches = 0
-    total_matches = 0
-    total_non_matches = 0
-    
-    for score, label in zip(similarity_scores, pair_labels):
-        if label == 0:  # Impostor pair
-            total_non_matches += 1
-            if score <= threshold:  # Incorrect match
-                false_matches += 1
-        else:  # Genuine pair
-            total_matches += 1
-            if score > threshold:  # Incorrect non-match
-                false_non_matches += 1
-
-    fmr = false_matches / total_non_matches if total_non_matches > 0 else 0
-    fnmr = false_non_matches / total_matches if total_matches > 0 else 0
-    
-    return fmr, fnmr
+    def evaluate_fmr_fnmr(self, verification_results):
+        fmr = {}
+        fmr["COSINE"] = {}
+        
+        fnmr = {}
+        fnmr["COSINE"] = {}
+        
+        for threshold in self.thresholds:
+            fmr["COSINE"][threshold] = self.__performance_evaluator.calculate_fmr(verification_results["COSINE"][threshold])
+            fnmr["COSINE"][threshold] = self.__performance_evaluator.calculate_fnmr(verification_results["COSINE"][threshold])
+        return fmr, fnmr
 
 def main():
     # Tunable parameters
-    kernel_size = 31
-    f = 0.075
-    thresholds = [0.446, 0.472, 0.502]         
+    kernel_size = 31 # Can be tuned
+    f = 0.075 # Can be tuned
+    thresholds = [0.155, 0.160, 0.165] # Can be tuned
 
     training, testing = DataLoader.create().load()
 
-    iris_model = IrisRecognitionModel(training, testing, kernel_size, f)
+    iris_model = IrisRecognitionModel(training, testing, kernel_size, f, thresholds)
 
     X_train, X_test, y_train, y_test = iris_model.extract_features_and_labels()
 
     iris_model.fit(X_train, y_train)
 
-    # Identification mode
-    y_pred_identify = iris_model.identify(X_test)
+    y_pred = iris_model.identify(X_test)
 
-    crr = iris_model.evaluate(y_test, y_pred_identify)
+    y_verif = iris_model.verify(X_test, y_test)
 
-    print("L1 distance measure | ", crr["L1"], "%")
-    print("L2 distance measure | ", crr["L2"], "%")
-    print("Cosine distance measure | ", crr["COSINE"], "%")
+    crr = iris_model.evaluate_crr(y_test, y_pred)
 
-    # Verification mode
-    # Generate pairs of features (genuine and impostor)
-    num_genuine_pairs = 10000
-    num_impostor_pairs = 10000
-    pairs, pair_labels = create_pairs(X_test, np.array(y_test), num_genuine_pairs, num_impostor_pairs)
-    
-    y_pred_verify = iris_model.verify(pairs)
-    
-    # Calculate FMR and FNMR for each threshold per metric
-    plt.figure(figsize=(15, 5))
+    fmr, fnmr = iris_model.evaluate_fmr_fnmr(y_verif)
 
-    # L1 metric plot
-    plt.subplot(1, 3, 1)
-    for threshold in thresholds:
-        fmr, fnmr = calculate_fmr_fnmr(y_pred_verify["L1"], pair_labels, threshold)
-        print(f"Metric: L1 | Threshold: {threshold} | FMR: {fmr * 100} % | FNMR: {fnmr * 100} %")
-        plt.plot(fmr, fnmr, label=f'Threshold: {threshold}')
-    plt.xlabel("FMR")
-    plt.ylabel("FNMR")
-    plt.title("L1 Metric")
-    plt.legend()
+    print("L1 distance measure | ", crr["L1"])
+    print("L2 distance measure | ", crr["L2"])
+    print("Cosine distance measure | ", crr["COSINE"])
 
-    # L2 metric plot
-    plt.subplot(1, 3, 2)
-    for threshold in thresholds:
-        fmr, fnmr = calculate_fmr_fnmr(y_pred_verify["L2"], pair_labels, threshold)
-        print(f"Metric: L2 | Threshold: {threshold} | FMR: {fmr * 100} % | FNMR: {fnmr * 100} %")
-        plt.plot(fmr, fnmr, label=f'Threshold: {threshold}')
-    plt.xlabel("FMR")
-    plt.ylabel("FNMR")
-    plt.title("L2 Metric")
-    plt.legend()
-
-    # COSINE metric plot
-    plt.subplot(1, 3, 3)
-    for threshold in thresholds:
-        fmr, fnmr = calculate_fmr_fnmr(y_pred_verify["COSINE"], pair_labels, threshold)
-        print(f"Metric: COSINE | Threshold: {threshold} | FMR: {fmr * 100} % | FNMR: {fnmr * 100} %")
-        plt.plot(fmr, fnmr, label=f'Threshold: {threshold}')
-    plt.xlabel("FMR")
-    plt.ylabel("FNMR")
-    plt.title("Cosine Metric")
-    plt.legend()
-
-    plt.tight_layout()
-    plt.show()
+    print("Cosine FMR | ", fmr["COSINE"])
+    print("Cosine FNMR | ", fnmr["COSINE"])
 
 if __name__ == "__main__":
     main()
