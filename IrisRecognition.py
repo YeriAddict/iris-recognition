@@ -1,6 +1,8 @@
 import os
 import random
 import cv2
+from matplotlib import pyplot as plt
+import numpy as np
 
 from IrisLocalization import IrisLocalizer
 from IrisNormalization import IrisNormalizer
@@ -307,11 +309,34 @@ class IrisRecognitionModel:
             fnmr["COSINE"][threshold] = self.__performance_evaluator.calculate_fnmr(verification_results["COSINE"][threshold])
         return fmr, fnmr
 
+def plot_det_curve(fmr, fnmr, thresholds):
+    fmr_values = np.array([fmr["COSINE"][t] for t in thresholds])
+    fnmr_values = np.array([fnmr["COSINE"][t] for t in thresholds])
+
+    # Plot the DET curve
+    plt.figure(figsize=(10, 6))
+    plt.plot(fmr_values, fnmr_values, marker='o', linestyle='-', color='b', label="DET Curve (FMR vs FNMR)")
+
+    # Annotate each point with its corresponding threshold
+    for i, threshold in enumerate(thresholds):
+        plt.annotate(f"{threshold}", (fmr_values[i], fnmr_values[i]),
+                     textcoords="offset points", xytext=(5, 5), ha='center', fontsize=8)
+
+    # Configure plot
+    plt.xscale("log")
+    plt.yscale("log")
+    plt.xlabel("False Match Rate (FMR) [%]")
+    plt.ylabel("False Non-Match Rate (FNMR) [%]")
+    plt.title("Detection Error Trade-off (DET) Curve")
+    plt.legend()
+    plt.grid(True, which="both", linestyle="--", linewidth=0.5)
+    plt.show()
+
 def main():
     # Tunable parameters
     kernel_size = 31 # Can be tuned
     f = 0.075 # Can be tuned
-    thresholds = [0.155, 0.160, 0.165] # Can be tuned
+    thresholds = [0.140, 0.150, 0.155, 0.160, 0.165, 0.170, 0.180, 0.190, 0.200, 0.300, 0.400] # Can be tuned
 
     training, testing = DataLoader.create().load()
 
@@ -335,6 +360,8 @@ def main():
 
     print("Cosine FMR  in format of (threshold: rate in %) | ", fmr["COSINE"])
     print("Cosine FNMR in format of (threshold: rate in %) | ", fnmr["COSINE"])
+
+    plot_det_curve(fmr, fnmr, thresholds)
 
 if __name__ == "__main__":
     main()
