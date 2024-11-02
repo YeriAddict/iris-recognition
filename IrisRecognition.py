@@ -315,20 +315,17 @@ def plot_det_curve(fmr, fnmr, thresholds):
 
     # Plot the DET curve
     plt.figure(figsize=(10, 6))
-    plt.plot(fmr_values, fnmr_values, marker='o', linestyle='-', color='b', label="DET Curve (FMR vs FNMR)")
+    plt.plot(fmr_values, fnmr_values, marker="o", linestyle="-", color="r")
 
     # Annotate each point with its corresponding threshold
     for i, threshold in enumerate(thresholds):
         plt.annotate(f"{threshold}", (fmr_values[i], fnmr_values[i]),
-                     textcoords="offset points", xytext=(5, 5), ha='center', fontsize=8)
+                     textcoords="offset points", xytext=(5, 5), ha="center", fontsize=8)
 
     # Configure plot
-    plt.xscale("log")
-    plt.yscale("log")
-    plt.xlabel("False Match Rate (FMR) [%]")
-    plt.ylabel("False Non-Match Rate (FNMR) [%]")
-    plt.title("Detection Error Trade-off (DET) Curve")
-    plt.legend()
+    plt.xlabel("False Match Rate (FMR) (in %)")
+    plt.ylabel("False Non-Match Rate (FNMR) (in %)")
+    plt.title("FMR vs. FNMR by different thresholds using COSINE distance")
     plt.grid(True, which="both", linestyle="--", linewidth=0.5)
     plt.show()
 

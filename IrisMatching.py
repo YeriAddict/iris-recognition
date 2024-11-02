@@ -88,7 +88,7 @@ class IrisMatcher:
         f = self.lda.transform([feature_vector])[0]
 
         if claimed_class is not None:
-            ## Verification mode (One-to-One Matching)
+            ### Verification mode (One-to-One Matching) ### 
 
             # Calculate the distance between the projected feature vector and the claimed class center
             center = self.class_centers[claimed_class]
@@ -96,7 +96,7 @@ class IrisMatcher:
 
             return distance
         else:
-            ## Identification mode (One-to-Many Matching)
+            ### Identification mode (One-to-Many Matching) ### 
 
             # Find the closest class center to the projected feature vector
             best_label = None
