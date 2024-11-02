@@ -329,12 +329,12 @@ def main():
 
     fmr, fnmr = iris_model.evaluate_fmr_fnmr(y_verif)
 
-    print("L1 distance measure | ", crr["L1"])
-    print("L2 distance measure | ", crr["L2"])
-    print("Cosine distance measure | ", crr["COSINE"])
+    print("L1 distance measure     | ", round(crr["L1"], 4), "%")
+    print("L2 distance measure     | ", round(crr["L2"], 4), "%")
+    print("Cosine distance measure | ", round(crr["COSINE"], 4), "%")
 
-    print("Cosine FMR | ", fmr["COSINE"])
-    print("Cosine FNMR | ", fnmr["COSINE"])
+    print("Cosine FMR  in format of (threshold: rate in %) | ", fmr["COSINE"])
+    print("Cosine FNMR in format of (threshold: rate in %) | ", fnmr["COSINE"])
 
 if __name__ == "__main__":
     main()
