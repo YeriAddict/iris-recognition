@@ -11,17 +11,17 @@ Objective: Detect and isolate the iris from the eye image.
 
 Process: 
 
-- Estimate the Pupil Center: Approximate the pupil coordinates by processing a small region around the center. 
+- Estimate the Pupil Center: Approximated the pupil coordinates by processing a small region around the center. 
 
-- Refinement: Adaptive thresholding using Otsu's methods is applied to refine the location of the pupil center using the centroid of the binary mask.
+- Refinement: Applied adaptive thresholding using Otsu's methods to refine the location of the pupil center using the centroid of the binary mask.
 
-- Iris Boundary Detection: Uses Canny edge detection and the Hough Circle Transform to detect circular iris boundaries.
+- Iris Boundary Detection: Used Canny edge detection and the Hough Circle Transform to detect circular iris boundaries.
 
 2. Iris Normalization (IrisNormalization.py)
 
-Objective: Normalizes the localized iris into a rectangular image for consistent feature extraction.
+Objective: Normalize the localized iris into a rectangular image for consistent feature extraction.
 
-Process: The iris region is unwrapped using polar coordinates by generates the radial and angular coordinates and grids of shape MxN, computing the inner and outer boundaries of the iris, and remapping the original image to the normalized coordinates, which results in a consistent rectangular iris image of size MxN.
+Process: The iris region is unwrapped using polar coordinates by generates the radial and angular coordinates and grids of shape M x N (64 x 512), computing the inner and outer boundaries of the iris, and remapping the original image to the normalized coordinates, which results in a consistent rectangular iris image of size M x N (64 x 512).
 
 3. Image Enhancement (ImageEnhancement.py)
 
@@ -29,47 +29,51 @@ Objective: Improve the quality of the normalized iris image by compensating for 
 
 Process:
 
-- IrisIlluminater: Estimates the background illumination of the iris by dividing the image into 16x16 blocks, calculate the mean value for each block, contructs a block matrix of mean values, and resizes the block matrix to the original image size using bicubic interpolation. 
+- IrisIlluminater: Estimate the background illumination of the iris by dividing the image into 16 x 16 blocks, calculate the mean value for each block, contruct a block matrix of mean values, and resize the block matrix to the original image size using bicubic interpolation. 
 
-- IrisEnhancer: Enhances contrast by subtracting the background illumination from the normalized image, dividing the image into 32x32 blocks, and applying histogram equalization to blocks of the image.
+- IrisEnhancer: Enhance contrast by subtracting the background illumination from the normalized image, dividing the image into 32 x 32 blocks, and applying histogram equalization to blocks of the image.
 
 4. Feature Extraction (FeatureExtraction.py)
 
-Objective: Handles feature extraction from iris images using custom Gabor filters and block-based feature extraction methods.
+Objective: Handle feature extraction from iris images using custom Gabor filters and block-based feature extraction methods.
 
 Process:
 
-- Gabor Filters: Two custom Gabor filters (modulation function and Guassian envelope) are applied to the iris' region of interest (ROI).
+- Gabor Filters: Apply two custom Gabor filters (modulation function and Guassian envelope) to the iris' region of interest (ROI) - 48 x 512.
 
-- Block-based Features: The image is divided into small blocks, and for each block, the mean and average absolute deviation are calculated.
+- Block-based Features: Divide the ROI into small blocks, and for each block, calculate the mean and average absolute deviation.
 
-- Rotation: Features are extracted after rotating the image at multiple angles to handle angular misalignment.
+- Rotation: Extract features after rotating the image at multiple angles to handle angular misalignment. 
 
 5. Iris Matching (IrisMatching.py)
 
-Objective: Matches input iris feature vectors to their respective classes using LDA and a nearest center classifier.
+Objective: Match input iris feature vectors to their respective classes using LDA and a nearest center classifier.
 
 Process:
 
-- LDA Projection: Projects feature vectors into a lower-dimensional space.
+- LDA Projection: Project feature vectors into a lower-dimensional space.
 
-- Nearest Center Classifier: Matches the projected vector to the nearest class center in the reduced space using L1, L2, or Cosine distance.
+- Nearest Center Classifier: Match the projected vector to the nearest class center in the reduced space using L1, L2, or Cosine distance.
 
 6. Performance Evaluation (PerformanceEvaluation.py)
 
-Objective: Evaluates model performance using metrics such as Correct Recognition Rate (CRR), False Match Rate (FMR), and False Non-Match Rate (FNMR).
+Objective: Evaluate model performance using metrics such as Correct Recognition Rate (CRR), False Match Rate (FMR), and False Non-Match Rate (FNMR).
 
 Metrics:
 
-- Correct Recognition Rate (CRR): Measures the percentage of correctly recognized irises.
+- Correct Recognition Rate (CRR): The percentage of correctly recognized irises (identification mode)
 
-- False Match Rate (FMR): The percentage of impostor matches incorrectly classified as genuine matches.
+- False Match Rate (FMR): The percentage of impostor matches incorrectly classified as genuine matches (verification mode).
 
-- False Non-Match Rate (FNMR): The percentage of genuine matches incorrectly classified as non-matches.
+- False Non-Match Rate (FNMR): The percentage of genuine matches incorrectly classified as non-matches (verification mode).
 
 7. Iris Recognition (IrisRecognition.py)
 
-Objective: The core pipeline that integrates the localization, normalization, enhancement, feature extraction, and matching modules to recognize irises.
+Objective: Create the core pipeline that integrates the localization, normalization, enhancement, feature extraction, and matching modules to recognize irises.
+
+
+*Note: More details are written as comments in each python script.*
+
 
 ## Usage
 
@@ -100,7 +104,7 @@ The core recognition process is handled by the IrisPipeline class, which perform
 
 - Feature Extraction
 
-The features extracted from the images are used for matching and verification.
+The features extracted from the images are used for identification and verification.
 
 3. Model Training and Evaluation
 
@@ -116,7 +120,7 @@ After model training and testing, performance metrics are computed using the Per
 
 4. Detection Error Trade-off (DET) Curve
 
-The DET Curve is used to visualize the trade-off between FMR and FNMR. The function plot_det_curve plots this curve to evaluate how different thresholds affect the model's performance. 
+The DET Curve is used to visualize the trade-off between FMR and FNMR. The function `plot_det_curve` plots this curve to evaluate how different thresholds affect the model's performance. 
 
 ## Limitations & Improvements
 
@@ -140,12 +144,13 @@ INTELLIGENCE, VOL. 25, NO. 12, DECEMBER
 
 2. Note_CASIA-IrisV1.pdf
 
+
 ## Peer Evaluation Form 
 
 | Name       | IrisRecognition | IrisLocalization | IrisNormalization | ImageEnhancement | FeatureExtraction | IrisMatching | PerformanceEvaluation | Readme File |
 |------------|-----------------|------------------|--------------------|------------------|-------------------|--------------|-----------------------|-------------|
 | Denis Leang | [ ]             | [ ]              | [ ]                | [ ]              | [ ]               | [ ]          | [ ]                   | [ ]         |
-| Suyeon Ju   | [ ]             | [ ]              | [ ]                | [ ]              | [ ]               | [ ]          | [ ]                   | [ ]         |
+| Suyeon Ju   | [x]             | [x]              | [x]                | [x]              | [x]               | [x]          | [x]                   | [ ]         |
 | Jaclyn Vu   | [ ]             | [ ]              | [ ]                | [x]              | [x]               | [x]          | [x]                   | [x]         |
 
 
