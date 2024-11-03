@@ -26,10 +26,11 @@ class IrisIlluminater:
     """
     def __init__(self, image):
         self.image = image
-        self.M = image.shape[0]
-        self.N = image.shape[1]
 
-        self.block_size_light = 16
+        self.__M = image.shape[0]
+        self.__N = image.shape[1]
+
+        self.__block_size_light = 16
 
     def illuminate_iris(self):
         """
@@ -45,19 +46,19 @@ class IrisIlluminater:
         """
 
         # Redefine the image as a block matrix of dimensions 16x16
-        image_as_blocks = np.zeros((self.M//self.block_size_light, self.N//self.block_size_light))
+        image_as_blocks = np.zeros((self.__M//self.__block_size_light, self.__N//self.__block_size_light))
 
         # Loop through each 16x16 block to calculate the mean value
-        for i in range(0, self.M, self.block_size_light):
-            for j in range(0, self.N, self.block_size_light):
-                i_step = i // self.block_size_light
-                j_step = j // self.block_size_light
-                block = self.image[i:i+self.block_size_light, j:j+self.block_size_light]
+        for i in range(0, self.__M, self.__block_size_light):
+            for j in range(0, self.__N, self.__block_size_light):
+                i_step = i // self.__block_size_light
+                j_step = j // self.__block_size_light
+                block = self.image[i:i+self.__block_size_light, j:j+self.__block_size_light]
                 image_as_blocks[i_step, j_step] = np.mean(block)
                 
         # Expand at the same size as the normalized image by bicubic interpolation 
         # (estimating the color in an image pixel by calculating the average of 16 pixels residing around pixels that are similar to pixels in the source image)
-        background_illumination = cv2.resize(image_as_blocks, (self.N, self.M), interpolation=cv2.INTER_CUBIC)
+        background_illumination = cv2.resize(image_as_blocks, (self.__N, self.__M), interpolation=cv2.INTER_CUBIC)
         
         self.image = background_illumination
 
@@ -99,11 +100,12 @@ class IrisEnhancer:
     """
     def __init__(self, image, background_illumination):
         self.image = image
-        self.background_illumination = background_illumination
-        self.M = image.shape[0]
-        self.N = image.shape[1]
 
-        self.block_size_hist = 32
+        self.__background_illumination = background_illumination
+        self.__M = image.shape[0]
+        self.__N = image.shape[1]
+
+        self.__block_size_hist = 32
 
     def enhance_iris(self):
         """
@@ -117,16 +119,16 @@ class IrisEnhancer:
             np.ndarray: The enhanced iris image.
         """
         # Subtract from the normalized image to compensate for a variety of lighting conditions
-        illum_estimate_image = cv2.subtract(self.image, self.background_illumination.astype(np.uint8))
+        illum_estimate_image = cv2.subtract(self.image, self.__background_illumination.astype(np.uint8))
 
         # Redefine the image as a block matrix of dimensions 32x32
-        enhanced_image = np.zeros((self.M, self.N))
+        enhanced_image = np.zeros((self.__M, self.__N))
 
         # Loop through each 32x32 block to apply histogram equalization
-        for i in range(0, self.M, self.block_size_hist):
-            for j in range(0, self.N, self.block_size_hist):
-                i_range = min(i + self.block_size_hist, self.M)
-                j_range = min(j + self.block_size_hist, self.N)
+        for i in range(0, self.__M, self.__block_size_hist):
+            for j in range(0, self.__N, self.__block_size_hist):
+                i_range = min(i + self.__block_size_hist, self.__M)
+                j_range = min(j + self.__block_size_hist, self.__N)
                 block = illum_estimate_image[i:i_range, j:j_range]
                 enhanced_image[i:i_range, j:j_range] = cv2.equalizeHist(block.astype(np.uint8))
             

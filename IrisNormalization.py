@@ -29,12 +29,13 @@ class IrisNormalizer:
     """
     def __init__(self, image, pupil_coordinates):
         self.image = image
-        self.Xp = pupil_coordinates[0]
-        self.Yp = pupil_coordinates[1]
-        self.Rp = pupil_coordinates[2]
         
-        self.M = 64
-        self.N = 512
+        self.__Xp = pupil_coordinates[0]
+        self.__Yp = pupil_coordinates[1]
+        self.__Rp = pupil_coordinates[2]
+        
+        self.__M = 64
+        self.__N = 512
 
     def normalize_iris(self):
         """
@@ -48,23 +49,23 @@ class IrisNormalizer:
             numpy.ndarray: The normalized iris image.
         """
         # Generate the radial and angular coordinates and grids of shape MxN
-        r = np.linspace(0, 1, self.M)
-        theta = np.linspace(0, 2 * np.pi, self.N)
+        r = np.linspace(0, 1, self.__M)
+        theta = np.linspace(0, 2 * np.pi, self.__N)
         theta_grid, r_grid = np.meshgrid(theta, r)
 
         # Inner boundary
-        rp = self.Rp
+        rp = self.__Rp
         xp = rp * np.cos(theta_grid)
         yp = rp * np.sin(theta_grid)
 
         # Outer boundary
-        ri = self.Rp + 55
+        ri = self.__Rp + 55
         xi = ri * np.cos(theta_grid)
         yi = ri * np.sin(theta_grid)
 
         # Store new pixel positions for each point on the iris
-        x = self.Xp + (1 - r_grid) * xp + r_grid * xi
-        y = self.Yp + (1 - r_grid) * yp + r_grid * yi
+        x = self.__Xp + (1 - r_grid) * xp + r_grid * xi
+        y = self.__Yp + (1 - r_grid) * yp + r_grid * yi
 
         # Remap the original image to the normalized coordinates
         normalized_iris = cv2.remap(self.image, x.astype(np.float32), y.astype(np.float32), interpolation=cv2.INTER_LINEAR)
