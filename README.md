@@ -77,7 +77,7 @@ This project implements an iris recognition system that extracts and analyzes ir
 
 ## Usage
 
-1. Data Loading
+### 1. Data Loading
 The dataset is loaded using the DataLoader class. It expects a folder structure where each eye's images are stored in subdirectories for training and testing:
 
 input/
@@ -90,7 +90,7 @@ input/
         
 The load() method loads the images and splits them into training and testing sets.
 
-2. Pipeline Execution
+### 2. Pipeline Execution
 
 The core recognition process is handled by the IrisPipeline class, which performs:
 
@@ -106,7 +106,7 @@ The core recognition process is handled by the IrisPipeline class, which perform
 
 The features extracted from the images are used for identification and verification.
 
-3. Model Training and Evaluation
+### 3. Model Training and Evaluation
 
 The IrisRecognitionModel class provides functions to:
 
@@ -118,7 +118,7 @@ The IrisRecognitionModel class provides functions to:
 
 After model training and testing, performance metrics are computed using the PerformanceEvaluator.
 
-4. Detection Error Trade-off (DET) Curve
+### 4. Detection Error Trade-off (DET) Curve
 
 The DET Curve is used to visualize the trade-off between FMR and FNMR. The function `plot_det_curve` plots this curve to evaluate how different thresholds affect the model's performance. 
 
