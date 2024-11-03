@@ -142,9 +142,10 @@ INTELLIGENCE, VOL. 25, NO. 12, DECEMBER
 
 ## Peer Evaluation Form 
 
-| Name       | IrisRecognition | IrisLocalization | IrisNormalization | ImageEnhancement | FeatureExtraction | IrisMatching | PerformanceEvaluation | Readme File |
-|------------|-----------------|------------------|--------------------|------------------|-------------------|--------------|-----------------------|-------------|
-| Denis Leang | [ ]             | [ ]              | [ ]                | [ ]              | [ ]               | [ ]          | [ ]                   | [ ]         |
-| Suyeon Ju   | [ ]             | [ ]              | [ ]                | [ ]              | [ ]               | [ ]          | [ ]                   | [ ]         |
-| Jaclyn Vu   | [ ]             | [ ]              | [ ]                | [x]              | [x]               | [x]          | [x]                   | [x]         |
+| Name        | Iris Recognition | Iris Localization | Iris Normalization | Image Enhancement | Feature Extraction | Iris Matching | Performance Evaluation | Readme File |
+|-------------|------------------|-------------------|--------------------|-------------------|--------------------|---------------|-------------------------|-------------|
+| Denis Leang | - [ ]            | - [ ]             | - [ ]              | - [ ]             | - [ ]              | - [ ]         | - [ ]                   | - [ ]       |
+| Suyeon Ju   | - [ ]            | - [ ]             | - [ ]              | - [ ]             | - [ ]              | - [ ]         | - [ ]                   | - [ ]       |
+| Jaclyn Vu   | - [ ]            | - [ ]             | - [ ]              | - [x]             | - [x]              | - [x]         | - [x]                   | - [x]       |
+
 
