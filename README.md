@@ -53,7 +53,7 @@ This project implements an iris recognition system that extracts and analyzes ir
 
 - LDA Projection: Project feature vectors into a lower-dimensional space.
 
-- Nearest Center Classifier: Match the projected vector to the nearest class center in the reduced space using L1, L2, or Cosine distance.
+- Nearest Center Classifier: Match the projected vector to the nearest class center in the reduced space using L1, L2, or Cosine distance. It supports both identification and verification modes used in biometrics.
 
 ### 6. Performance Evaluation (PerformanceEvaluation.py)
 
@@ -132,6 +132,8 @@ The DET Curve is used to visualize the trade-off between FMR and FNMR. The funct
 
 4. Limited Rotation Handling : The system handles rotation by rotating images at a few fixed angles. This approach might miss certain cases where the rotation exceeds the predefined set of angles, leading to poor recognition performance in such instances. We could explore techniques to improve the system's ability to handle extreme rotation.
 
+5. Noise Reduction: Eyelashes and other obstacles may lower the model's performance and should be treated during preprocessing. We could implement eyelash masking to identify eye regions with heavy obstruction and mask them before feature extraction.
+
 In general, we should introduce data augmentation techniques (e.g., random rotations, blurring, brightness adjustments) to make the model more resilient to variations in the iris images and improve generalization to new data.
 
 ## Resources 
@@ -149,7 +151,7 @@ INTELLIGENCE, VOL. 25, NO. 12, DECEMBER
 
 | Name       | IrisRecognition | IrisLocalization | IrisNormalization | ImageEnhancement | FeatureExtraction | IrisMatching | PerformanceEvaluation | Readme File |
 |------------|-----------------|------------------|--------------------|------------------|-------------------|--------------|-----------------------|-------------|
-| Denis Leang | [ ]             | [ ]              | [ ]                | [ ]              | [ ]               | [ ]          | [ ]                   | [ ]         |
+| Denis Leang | [x]             | [x]              | [x]                | [x]              | [x]               | [x]          | [ ]                   | [ ]         |
 | Suyeon Ju   | [x]             | [x]              | [x]                | [x]              | [x]               | [x]          | [x]                   | [ ]         |
 | Jaclyn Vu   | [x]             | [ ]              | [ ]                | [ ]              | [x]               | [x]          | [x]                   | [x]         |
 
