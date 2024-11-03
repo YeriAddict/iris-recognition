@@ -7,9 +7,9 @@ This project implements an iris recognition system that extracts and analyzes ir
 
 1. Iris Localization (IrisLocalization.py)
 
-Objective: Detect and isolate the iris from the eye image.
+**Objective:** Detect and isolate the iris from the eye image.
 
-Process: 
+**Process:**
 
 - Estimate the Pupil Center: Approximated the pupil coordinates by processing a small region around the center. 
 
@@ -19,15 +19,15 @@ Process:
 
 2. Iris Normalization (IrisNormalization.py)
 
-Objective: Normalize the localized iris into a rectangular image for consistent feature extraction.
+**Objective:** Normalize the localized iris into a rectangular image for consistent feature extraction.
 
-Process: The iris region is unwrapped using polar coordinates by generates the radial and angular coordinates and grids of shape M x N (64 x 512), computing the inner and outer boundaries of the iris, and remapping the original image to the normalized coordinates, which results in a consistent rectangular iris image of size M x N (64 x 512).
+**Process:** The iris region is unwrapped using polar coordinates by generates the radial and angular coordinates and grids of shape M x N (64 x 512), computing the inner and outer boundaries of the iris, and remapping the original image to the normalized coordinates, which results in a consistent rectangular iris image of size M x N (64 x 512).
 
 3. Image Enhancement (ImageEnhancement.py)
 
-Objective: Improve the quality of the normalized iris image by compensating for illumination and contrast issues to improved feature extraction. 
+**Objective:** Improve the quality of the normalized iris image by compensating for illumination and contrast issues to improved feature extraction. 
 
-Process:
+**Process:**
 
 - IrisIlluminater: Estimate the background illumination of the iris by dividing the image into 16 x 16 blocks, calculate the mean value for each block, contruct a block matrix of mean values, and resize the block matrix to the original image size using bicubic interpolation. 
 
@@ -35,9 +35,9 @@ Process:
 
 4. Feature Extraction (FeatureExtraction.py)
 
-Objective: Handle feature extraction from iris images using custom Gabor filters and block-based feature extraction methods.
+**Objective:** Handle feature extraction from iris images using custom Gabor filters and block-based feature extraction methods.
 
-Process:
+**Process:**
 
 - Gabor Filters: Apply two custom Gabor filters (modulation function and Guassian envelope) to the iris' region of interest (ROI) - 48 x 512.
 
@@ -47,9 +47,9 @@ Process:
 
 5. Iris Matching (IrisMatching.py)
 
-Objective: Match input iris feature vectors to their respective classes using LDA and a nearest center classifier.
+**Objective:** Match input iris feature vectors to their respective classes using LDA and a nearest center classifier.
 
-Process:
+**Process:**
 
 - LDA Projection: Project feature vectors into a lower-dimensional space.
 
@@ -57,9 +57,9 @@ Process:
 
 6. Performance Evaluation (PerformanceEvaluation.py)
 
-Objective: Evaluate model performance using metrics such as Correct Recognition Rate (CRR), False Match Rate (FMR), and False Non-Match Rate (FNMR).
+**Objective:** Evaluate model performance using metrics such as Correct Recognition Rate (CRR), False Match Rate (FMR), and False Non-Match Rate (FNMR).
 
-Metrics:
+**Metrics:**
 
 - Correct Recognition Rate (CRR): The percentage of correctly recognized irises (identification mode)
 
@@ -69,7 +69,7 @@ Metrics:
 
 7. Iris Recognition (IrisRecognition.py)
 
-Objective: Create the core pipeline that integrates the localization, normalization, enhancement, feature extraction, and matching modules to recognize irises.
+**Objective:** Create the core pipeline that integrates the localization, normalization, enhancement, feature extraction, and matching modules to recognize irises.
 
 
 *Note: More details are written as comments in each python script.*
