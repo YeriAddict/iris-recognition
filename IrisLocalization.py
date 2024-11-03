@@ -33,13 +33,14 @@ class IrisLocalizer:
 
     def __init__(self, image):
         self.image = image
-        self.region_dimension = 60
-        self.height = self.image.shape[0]
-        self.width = self.image.shape[1]
 
-        self.Xp = None
-        self.Yp = None
-        self.Rp = None
+        self.__region_dimension = 60
+        self.__height = self.image.shape[0]
+        self.__width = self.image.shape[1]
+
+        self.__Xp = None
+        self.__Yp = None
+        self.__Rp = None
 
     def localize_iris(self):
         """
@@ -51,21 +52,21 @@ class IrisLocalizer:
         4. Creates a mask to isolate the iris region and updates the image to keep only the iris.
 
         Returns:
-            tuple: A tuple containing the processed image and the coordinates of the iris center and radius (self.image, (self.Xp, self.Yp, self.Rp)).
+            tuple: A tuple containing the processed image and the coordinates of the iris center and radius (self.image, (self.__Xp, self.__Yp, self.__Rp)).
         """
         ### STEP 1 ###
 
         # Estimate the pupil center as the center of the image
-        self.Xp = self.image.shape[1] // 2
-        self.Yp = self.image.shape[0] // 2
+        self.__Xp = self.image.shape[1] // 2
+        self.__Yp = self.image.shape[0] // 2
 
         ### STEP 2 ###
 
         # Define the 120x120 region around the estimated center
-        x1 = max(0, self.Xp - self.region_dimension)
-        x2 = min(self.width, self.Xp + self.region_dimension)
-        y1 = max(0, self.Yp - self.region_dimension)
-        y2 = min(self.height, self.Yp + self.region_dimension)
+        x1 = max(0, self.__Xp - self.__region_dimension)
+        x2 = min(self.__width, self.__Xp + self.__region_dimension)
+        y1 = max(0, self.__Yp - self.__region_dimension)
+        y2 = min(self.__height, self.__Yp + self.__region_dimension)
         pupil_region = self.image[y1:y2, x1:x2]
 
         # Convert to grayscale
@@ -81,12 +82,12 @@ class IrisLocalizer:
             centroid_x = int(moments["m10"] / moments["m00"])
             centroid_y = int(moments["m01"] / moments["m00"])
         else:
-            centroid_x = self.Xp
-            centroid_y = self.Yp
+            centroid_x = self.__Xp
+            centroid_y = self.__Yp
 
         # Update the pupil center coordinates
-        self.Xp = centroid_x + x1
-        self.Yp = centroid_y + y1
+        self.__Xp = centroid_x + x1
+        self.__Yp = centroid_y + y1
 
         ### STEP 3 ###
 
@@ -111,12 +112,12 @@ class IrisLocalizer:
         circles = cv2.HoughCircles(edges, cv2.HOUGH_GRADIENT, 5, 100)
 
         # Find the circle closest to the estimated center by calculating the Euclidean distance
-        closest_circle = min(circles[0], key=lambda x: np.linalg.norm(np.array([self.Xp, self.Yp]) - np.array([x[0], x[1]])))
+        closest_circle = min(circles[0], key=lambda x: np.linalg.norm(np.array([self.__Xp, self.__Yp]) - np.array([x[0], x[1]])))
 
         # Update the pupil center coordinates
-        self.Xp = int(closest_circle[0])
-        self.Yp = int(closest_circle[1])
-        self.Rp = int(closest_circle[2])
+        self.__Xp = int(closest_circle[0])
+        self.__Yp = int(closest_circle[1])
+        self.__Rp = int(closest_circle[2])
     
         ### STEP 4 ###
 
@@ -124,12 +125,12 @@ class IrisLocalizer:
         mask = np.zeros_like(self.image)
 
         # Draw a white-filled circle over the iris area on the mask
-        cv2.circle(mask, (self.Xp, self.Yp), int(self.Rp+55), (255, 255, 255), thickness=-1)
+        cv2.circle(mask, (self.__Xp, self.__Yp), int(self.__Rp+55), (255, 255, 255), thickness=-1)
 
         # Keep only the iris region by performing a bitwise AND with the mask
         self.image = cv2.bitwise_and(self.image, mask)
 
-        return self.image, (self.Xp, self.Yp, self.Rp)
+        return self.image, (self.__Xp, self.__Yp, self.__Rp)
     
     def save_image(self, filename):
         """

@@ -9,11 +9,15 @@ class PerformanceEvaluator:
     
     Methods
     -------
-        calculate_crr(labels, predicted_labels)
-            Calculates the Correct Recognition Rate (CRR) given the true labels and predicted labels.
+        calculate_crr(labels, predicted_labels):
+            Calculates the Correct Recognition Rate (CRR).
+        calculate_fmr(verification_results):
+            Calculates the False Match Rate (FMR).
+        calculate_fnmr(verification_results):
+            Calculates the False Non-Match Rate (FNMR).        
     """
     def __init__(self, n_classes):
-        self.n_classes = n_classes
+        self.__n_classes = n_classes
 
     def calculate_crr(self, labels, predicted_labels):
         """
@@ -26,7 +30,7 @@ class PerformanceEvaluator:
         Returns:
             float: The correct recognition rate as a percentage.
         """
-        correct_recognition_rate = (sum(1 for true_label, predict_label in zip(labels, predicted_labels) if true_label == predict_label) / self.n_classes) * 100
+        correct_recognition_rate = (sum(1 for true_label, predict_label in zip(labels, predicted_labels) if true_label == predict_label) / self.__n_classes) * 100
         return correct_recognition_rate
 
     def calculate_fmr(self, verification_results):
@@ -57,6 +61,5 @@ class PerformanceEvaluator:
         Returns:
             float: The False Non-Match Rate (FNMR) as a percentage.
         """
-
         false_non_match_rate = (verification_results["false_non_matches"] / verification_results["total_genuine_matches"]) * 100
         return false_non_match_rate

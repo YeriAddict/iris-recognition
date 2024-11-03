@@ -48,27 +48,27 @@ class FeatureExtractor:
             Extracts features from the iris image by applying Gabor filters to the ROI and combining the features from both channels.
     """
     def __init__(self, image, rotation_angles, kernel_size, f):
-        self.image = image
-        self.roi_height = 48
-        self.roi_width = 512
-        self.rotation_angles = rotation_angles
+        self.features = []
+
+        self.__image = image
+        self.__roi_height = 48
+        self.__roi_width = 512
+        self.__rotation_angles = rotation_angles
 
         # Gabor filter parameters
-        self.kernel_size = kernel_size
-        self.f = f
-        self.block_size = 8
+        self.__kernel_size = kernel_size
+        self.__f = f
+        self.__block_size = 8
 
         # First Channel
-        self.delta_x1 = 3
-        self.delta_y1 = 1.5
+        self.__delta_x1 = 3
+        self.__delta_y1 = 1.5
 
         # Second Channel
-        self.delta_x2 = 4.5
-        self.delta_y2 = 1.5
-
-        self.features = []
+        self.__delta_x2 = 4.5
+        self.__delta_y2 = 1.5
     
-    def rotate_enhanced_image(self, image, angle):
+    def __rotate_enhanced_image(self, image, angle):
         """
         Rotates the given image by the specified angle.
         
@@ -88,7 +88,7 @@ class FeatureExtractor:
 
         return rotated_image
 
-    def kernel_function(self, x, y, f, delta_x, delta_y):
+    def __kernel_function(self, x, y, f, delta_x, delta_y):
         """
         Computes the Gabor kernel function for given parameters.
 
@@ -110,7 +110,7 @@ class FeatureExtractor:
 
         return gabor_kernel
 
-    def apply_filter_to_roi(self, roi, delta_x, delta_y):
+    def __apply_filter_to_roi(self, roi, delta_x, delta_y):
         """
         Applies the custom filter to the region of interest (ROI).
 
@@ -124,20 +124,20 @@ class FeatureExtractor:
         """
         # Source: https://www.geeksforgeeks.org/opencv-getgaborkernel-method/
         # Create a grid for generating the kernel
-        center = self.kernel_size // 2
+        center = self.__kernel_size // 2
         x = np.arange(-center, center + 1)
         y = np.arange(-center, center + 1)
         X, Y = np.meshgrid(x, y)
 
         # Generate the kernel for a channel
-        kernel = self.kernel_function(X, Y, self.f, delta_x, delta_y)
+        kernel = self.__kernel_function(X, Y, self.__f, delta_x, delta_y)
 
         # Apply the kernel to the ROI
         filtered_roi = cv2.filter2D(roi, -1, kernel)
 
         return filtered_roi
 
-    def extract_features_from_roi(self, filtered_roi):
+    def __extract_features_from_roi(self, filtered_roi):
         """
         Extracts features from a filtered region of interest (ROI) in an image.
 
@@ -149,9 +149,9 @@ class FeatureExtractor:
         """
         # Extract features from the filtered ROI
         features = []
-        for i in range(0, self.roi_height, self.block_size):
-            for j in range(0, self.roi_width, self.block_size):
-                block = filtered_roi[i:i+self.block_size, j:j+self.block_size]
+        for i in range(0, self.__roi_height, self.__block_size):
+            for j in range(0, self.__roi_width, self.__block_size):
+                block = filtered_roi[i:i+self.__block_size, j:j+self.__block_size]
                 block_mean = np.mean(np.abs(block))
                 block_average_absolute_deviation = np.mean(np.abs(np.abs(block) - block_mean))
                 feature = (block_mean, block_average_absolute_deviation)
@@ -159,7 +159,7 @@ class FeatureExtractor:
                 features.append(feature[1])
         return features
 
-    def normalize_features(self, features):
+    def __normalize_features(self, features):
         """
         Normalizes the extracted features by subtracting the mean and dividing by the standard deviation.
 
@@ -201,26 +201,26 @@ class FeatureExtractor:
             list: A list of lists of features (there are as many vectors as the number of rotation angles).
         """
         
-        for angle in self.rotation_angles:
+        for angle in self.__rotation_angles:
             # Rotate the enhanced image by the specified angle
-            rotated_image = self.rotate_enhanced_image(self.image, angle)
+            rotated_image = self.__rotate_enhanced_image(self.__image, angle)
 
             # Extract the region of interest (ROI) from the enhanced iris image
-            roi_image = rotated_image[:self.roi_height, :self.roi_width]
+            roi_image = rotated_image[:self.__roi_height, :self.__roi_width]
 
             # Filter the ROI using the two channels
-            filtered_roi1 = self.apply_filter_to_roi(roi_image, self.delta_x1, self.delta_y1)
-            filtered_roi2 = self.apply_filter_to_roi(roi_image, self.delta_x2, self.delta_y2)
+            filtered_roi1 = self.__apply_filter_to_roi(roi_image, self.__delta_x1, self.__delta_y1)
+            filtered_roi2 = self.__apply_filter_to_roi(roi_image, self.__delta_x2, self.__delta_y2)
 
             # Determine the features for each channel
-            filtered_roi1_features = self.extract_features_from_roi(filtered_roi1)
-            filtered_roi2_features = self.extract_features_from_roi(filtered_roi2)
+            filtered_roi1_features = self.__extract_features_from_roi(filtered_roi1)
+            filtered_roi2_features = self.__extract_features_from_roi(filtered_roi2)
 
             # Combine the features from both channels
             features_vector = filtered_roi1_features + filtered_roi2_features
 
             # Normalize the feature
-            normalized_features = self.normalize_features(features_vector)
+            normalized_features = self.__normalize_features(features_vector)
             self.features.append(normalized_features)
 
         return self.features
