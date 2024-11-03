@@ -77,9 +77,13 @@ Objective: The core pipeline that integrates the localization, normalization, en
 The dataset is loaded using the DataLoader class. It expects a folder structure where each eye's images are stored in subdirectories for training and testing:
 
 input/
+
     └── 001/
+    
         ├── 1/
+        
         └── 2/
+        
 The load() method loads the images and splits them into training and testing sets.
 
 2. Pipeline Execution
