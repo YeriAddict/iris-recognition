@@ -5,7 +5,7 @@ This project implements an iris recognition system that extracts and analyzes ir
 
 ## Project Structure
 
-1. Iris Localization (IrisLocalization.py)
+#### 1. Iris Localization (IrisLocalization.py)
 
 **Objective:** Detect and isolate the iris from the eye image.
 
@@ -17,13 +17,13 @@ This project implements an iris recognition system that extracts and analyzes ir
 
 - Iris Boundary Detection: Used Canny edge detection and the Hough Circle Transform to detect circular iris boundaries.
 
-2. Iris Normalization (IrisNormalization.py)
+#### 2. Iris Normalization (IrisNormalization.py)
 
 **Objective:** Normalize the localized iris into a rectangular image for consistent feature extraction.
 
 **Process:** The iris region is unwrapped using polar coordinates by generates the radial and angular coordinates and grids of shape M x N (64 x 512), computing the inner and outer boundaries of the iris, and remapping the original image to the normalized coordinates, which results in a consistent rectangular iris image of size M x N (64 x 512).
 
-3. Image Enhancement (ImageEnhancement.py)
+#### 3. Image Enhancement (ImageEnhancement.py)
 
 **Objective:** Improve the quality of the normalized iris image by compensating for illumination and contrast issues to improved feature extraction. 
 
@@ -33,7 +33,7 @@ This project implements an iris recognition system that extracts and analyzes ir
 
 - IrisEnhancer: Enhance contrast by subtracting the background illumination from the normalized image, dividing the image into 32 x 32 blocks, and applying histogram equalization to blocks of the image.
 
-4. Feature Extraction (FeatureExtraction.py)
+#### 4. Feature Extraction (FeatureExtraction.py)
 
 **Objective:** Handle feature extraction from iris images using custom Gabor filters and block-based feature extraction methods.
 
@@ -45,7 +45,7 @@ This project implements an iris recognition system that extracts and analyzes ir
 
 - Rotation: Extract features after rotating the image at multiple angles to handle angular misalignment. 
 
-5. Iris Matching (IrisMatching.py)
+#### 5. Iris Matching (IrisMatching.py)
 
 **Objective:** Match input iris feature vectors to their respective classes using LDA and a nearest center classifier.
 
@@ -55,7 +55,7 @@ This project implements an iris recognition system that extracts and analyzes ir
 
 - Nearest Center Classifier: Match the projected vector to the nearest class center in the reduced space using L1, L2, or Cosine distance.
 
-6. Performance Evaluation (PerformanceEvaluation.py)
+#### 6. Performance Evaluation (PerformanceEvaluation.py)
 
 **Objective:** Evaluate model performance using metrics such as Correct Recognition Rate (CRR), False Match Rate (FMR), and False Non-Match Rate (FNMR).
 
@@ -67,7 +67,7 @@ This project implements an iris recognition system that extracts and analyzes ir
 
 - False Non-Match Rate (FNMR): The percentage of genuine matches incorrectly classified as non-matches (verification mode).
 
-7. Iris Recognition (IrisRecognition.py)
+#### 7. Iris Recognition (IrisRecognition.py)
 
 **Objective:** Create the core pipeline that integrates the localization, normalization, enhancement, feature extraction, and matching modules to recognize irises.
 
