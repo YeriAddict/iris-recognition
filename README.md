@@ -150,7 +150,7 @@ INTELLIGENCE, VOL. 25, NO. 12, DECEMBER
 | Name       | IrisRecognition | IrisLocalization | IrisNormalization | ImageEnhancement | FeatureExtraction | IrisMatching | PerformanceEvaluation | Readme File |
 |------------|-----------------|------------------|--------------------|------------------|-------------------|--------------|-----------------------|-------------|
 | Denis Leang | [ ]             | [ ]              | [ ]                | [ ]              | [ ]               | [ ]          | [ ]                   | [ ]         |
-| Suyeon Ju   | [ ]             | [x]              | [x]                | [x]              | [x]               | [x]          | [x]                   | [ ]         |
-| Jaclyn Vu   | [ ]             | [ ]              | [ ]                | [x]              | [x]               | [x]          | [x]                   | [x]         |
+| Suyeon Ju   | [x]             | [x]              | [x]                | [x]              | [x]               | [x]          | [x]                   | [ ]         |
+| Jaclyn Vu   | [x]             | [ ]              | [ ]                | [ ]              | [x]               | [x]          | [x]                   | [x]         |
 
 
