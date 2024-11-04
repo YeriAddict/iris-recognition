@@ -78,10 +78,6 @@ data/
 *.npy
 *.npz
 
-# Ignore local configuration files
-config.json
-config.py
-
 # Cache files
 .cache/
 *.tmp
@@ -90,5 +86,5 @@ config.py
 *.swo
 
 # Folders
-input
+
 output

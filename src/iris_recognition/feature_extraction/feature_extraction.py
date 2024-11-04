@@ -1,5 +1,4 @@
-import cv2
-import numpy as np
+from iris_recognition.imports import cv2, np
 
 class FeatureExtractor:
     """
@@ -200,7 +199,6 @@ class FeatureExtractor:
         Returns:
             list: A list of lists of features (there are as many vectors as the number of rotation angles).
         """
-        
         for angle in self.__rotation_angles:
             # Rotate the enhanced image by the specified angle
             rotated_image = self.__rotate_enhanced_image(self.__image, angle)
