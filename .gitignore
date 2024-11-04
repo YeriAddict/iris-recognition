@@ -86,5 +86,5 @@ data/
 *.swo
 
 # Folders
-
+input
 output
