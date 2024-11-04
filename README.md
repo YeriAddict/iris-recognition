@@ -1,11 +1,82 @@
 # IrisRecognition
+
+<!-- TABLE OF CONTENTS -->
+<details>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li>
+      <a href="#overview">Overview</a>
+      <ul>
+        <li><a href="#requirements">Requirements</a></li>
+        <li><a href="#how-to-get-started">How to Get Started</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#project-structure">Project Structure</a>
+      <ul>
+        <li><a href="#1-iris-localization">1. Iris Localization</a></li>
+        <li><a href="#2-iris-normalization">2. Iris Normalization</a></li>
+        <li><a href="#3-image-enhancement">3. Image Enhancement</a></li>
+        <li><a href="#4-feature-extraction">4. Feature Extraction</a></li>
+        <li><a href="#5-iris-matching">5. Iris Matching</a></li>
+        <li><a href="#6-performance-evaluation">6. Performance Evaluation</a></li>
+        <li><a href="#7-iris-preprocessing">7. Iris Preprocessing</a></li>
+        <li><a href="#8-iris-recognition-model">8. Iris Recognition Model</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#usage">Usage</a>
+      <ul>
+        <li><a href="#1-data-loading">1. Data Loading</a></li>
+        <li><a href="#2-pipeline-execution">2. Pipeline Execution</a></li>
+        <li><a href="#3-model-training-and-evaluation">3. Model Training and Evaluation</a></li>
+        <li><a href="#4-detection-error-trade-off-det-curve">4. Detection Error Trade-off (DET) Curve</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#limitations--improvements">Limitations & Improvements</a>
+    </li>
+    <li>
+      <a href="#resources">Resources</a>
+    </li>
+  </ol>
+</details>
+
+<!-- OVERVIEW -->
 ## Overview
 
-This project implements an iris recognition system that extracts and analyzes iris features from images using various image processing and machine learning techniques. The pipeline consists of localization, normalization, enhancement, feature extraction, matching, and evaluation components. It uses Fisher Linear Discriminant Analysis for dimensionality reduction and a nearest center classifier for iris matching.
+This project implements an iris recognition system that extracts and analyzes iris features from images using various image processing and machine learning techniques. It follows the design presented by Ma et al. in their paper, "Personal Identification Based on Iris Texture Analysis" [1] (available in the appendix).
+
+![model_desing](appendix/model_design.png)
+
+### Requirements
+
+This project is built in Python and will require the user to install the following packages:
+- numpy
+- matplotlib
+- opencv
+- scikit-learn
+
+It is possible to install these dependencies with the following command:
+   ```sh
+   py -m pip install -r requirements.txt
+   ```
+
+### How to get started
+
+There is an example of usage in the main.py file in the src folder. It imports the package iris_recognition alongside the two available classes IrisRecognitionModel and DataLoader.
+
+The config.json file should only be configured to modify the paths of the different used folders. The default and recommended usage is that the input dataset is located in its own folder on the same level as the iris_recognition package in the src folder.
 
 ## Project Structure
 
-### 1. Iris Localization (IrisLocalization.py)
+The following UML class diagram describes the general architecture of the code:
+
+![uml_class_diagram](appendix/uml_class_diagram.png)
+
+### 1. Iris Localization
+
+**File:** iris_localization.py
 
 **Objective:** Detect and isolate the iris from the eye image.
 
@@ -17,13 +88,17 @@ This project implements an iris recognition system that extracts and analyzes ir
 
 - Iris Boundary Detection: Used Canny edge detection and the Hough Circle Transform to detect circular iris boundaries.
 
-### 2. Iris Normalization (IrisNormalization.py)
+### 2. Iris Normalization
+
+**File:** iris_normalization.py
 
 **Objective:** Normalize the localized iris into a rectangular image for consistent feature extraction.
 
 **Process:** The iris region is unwrapped using polar coordinates by generates the radial and angular coordinates and grids of shape M x N (64 x 512), computing the inner and outer boundaries of the iris, and remapping the original image to the normalized coordinates, which results in a consistent rectangular iris image of size M x N (64 x 512).
 
-### 3. Image Enhancement (ImageEnhancement.py)
+### 3. Image Enhancement
+
+**Files:** iris_illumination.py and iris_enhancement.py
 
 **Objective:** Improve the quality of the normalized iris image by compensating for illumination and contrast issues to improved feature extraction. 
 
@@ -33,7 +108,9 @@ This project implements an iris recognition system that extracts and analyzes ir
 
 - IrisEnhancer: Enhance contrast by subtracting the background illumination from the normalized image, dividing the image into 32 x 32 blocks, and applying histogram equalization to blocks of the image.
 
-### 4. Feature Extraction (FeatureExtraction.py)
+### 4. Feature Extraction
+
+**File:** feature_extraction.py
 
 **Objective:** Handle feature extraction from iris images using custom Gabor filters and block-based feature extraction methods.
 
@@ -45,7 +122,9 @@ This project implements an iris recognition system that extracts and analyzes ir
 
 - Rotation: Extract features after rotating the image at multiple angles to handle angular misalignment. 
 
-### 5. Iris Matching (IrisMatching.py)
+### 5. Iris Matching
+
+**File:** iris_matching.py
 
 **Objective:** Match input iris feature vectors to their respective classes using LDA and a nearest center classifier.
 
@@ -55,7 +134,9 @@ This project implements an iris recognition system that extracts and analyzes ir
 
 - Nearest Center Classifier: Match the projected vector to the nearest class center in the reduced space using L1, L2, or Cosine distance. It supports both identification and verification modes used in biometrics.
 
-### 6. Performance Evaluation (PerformanceEvaluation.py)
+### 6. Performance Evaluation
+
+**File:** performance_evaluation.py
 
 **Objective:** Evaluate model performance using metrics such as Correct Recognition Rate (CRR), False Match Rate (FMR), and False Non-Match Rate (FNMR).
 
@@ -67,13 +148,31 @@ This project implements an iris recognition system that extracts and analyzes ir
 
 - False Non-Match Rate (FNMR): The percentage of genuine matches incorrectly classified as non-matches (verification mode).
 
-### 7. Iris Recognition (IrisRecognition.py)
+### 7. Iris Preprocessing
+
+**File:** iris_preprocessing.py
 
 **Objective:** Create the core pipeline that integrates the localization, normalization, enhancement, feature extraction, and matching modules to recognize irises.
 
+**Process:**
 
-*Note: More details are written as comments in each python script.*
+- For each image from the dataset, it performs the preprocessing and feature extraction parts
 
+- The final goal is to extract both features and labels
+
+### 8. Iris Recognition Model
+
+**File:** iris_recognition.py
+
+**Objective:** Create the main machine learning model to recognize an iris
+
+**Process:**
+
+- Currently supports both identification and verification mode used in biometrics
+  
+- The computed distance are the ones mentionned in [1] (e.g. L1, L2 and Cosine)
+
+- Only calculates the CRR (accuracy) and the FMR/FNMR for the cosine distance
 
 ## Usage
 
@@ -92,7 +191,7 @@ The load() method loads the images and splits them into training and testing set
 
 ### 2. Pipeline Execution
 
-The core recognition process is handled by the IrisPipeline class, which performs:
+The core recognition process is handled by the IrisDataPreprocessor class, which performs:
 
 - Localization
 
@@ -138,21 +237,6 @@ In general, we should introduce data augmentation techniques (e.g., random rotat
 
 ## Resources 
 
-1. Ma et al., Personal Identification Based on Iris
-Texture Analysis, IEEE TRANSACTIONS ON
-PATTERN ANALYSIS AND MACHINE
-INTELLIGENCE, VOL. 25, NO. 12, DECEMBER
-2003
-
-2. Note_CASIA-IrisV1.pdf
-
-
-## Peer Evaluation Form 
-
-| Name       | IrisRecognition | IrisLocalization | IrisNormalization | ImageEnhancement | FeatureExtraction | IrisMatching | PerformanceEvaluation | Readme File |
-|------------|-----------------|------------------|--------------------|------------------|-------------------|--------------|-----------------------|-------------|
-| Denis Leang | [x]             | [x]              | [x]                | [x]              | [x]               | [x]          | [ ]                   | [ ]         |
-| Suyeon Ju   | [x]             | [x]              | [x]                | [x]              | [x]               | [x]          | [x]                   | [ ]         |
-| Jaclyn Vu   | [x]             | [ ]              | [ ]                | [ ]              | [x]               | [x]          | [x]                   | [x]         |
+[1] L. Ma, Y. Wang, and T. Tan, "Personal Identification Based on Iris Texture Analysis," IEEE Transactions on Pattern Analysis and Machine Intelligence, vol. 25, no. 12, pp. 1519-1533, Dec. 2003.
 
 
