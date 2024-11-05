@@ -1,5 +1,4 @@
-import numpy as np
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from iris_recognition.imports import np, LinearDiscriminantAnalysis
 
 class IrisMatcher:
     """

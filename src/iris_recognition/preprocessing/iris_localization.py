@@ -1,5 +1,4 @@
-import cv2
-import numpy as np
+from iris_recognition.imports import cv2, np
 
 class IrisLocalizer:
     """

@@ -1,0 +1,10 @@
+{
+    "paths": {
+      "input": "src/input",
+      "output": "src/output",
+      "localized_folder": "/a_localized",
+      "normalized_folder": "/b_normalized",
+      "illuminated_folder": "/c_illuminated",
+      "enhanced_folder": "/d_enhanced"
+    }
+  }
