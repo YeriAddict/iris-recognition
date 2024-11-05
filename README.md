@@ -74,7 +74,7 @@ The following UML class diagram describes the general architecture of the code:
 
 ![uml_class_diagram](appendix/uml_class_diagram.png)
 
-In this project, it is assumed that the user has completed the image acquisition portion of the paper and has prepared the "input" dataset as described in the Usage section of the README.
+In this project, it is assumed that the user has completed the image acquisition portion of the paper and has prepared the "input" dataset as described in the Usage section of the README. A good quality eye image should look like the following:
 
 ![image_before_preprocessing](appendix/image_before_preprocessing.png)
 
