@@ -74,6 +74,10 @@ The following UML class diagram describes the general architecture of the code:
 
 ![uml_class_diagram](appendix/uml_class_diagram.png)
 
+In this project, it is assumed that the user has completed the image acquisition portion of the paper and has prepared the "input" dataset as described in the Usage section of the README. A good quality eye image should look like the following:
+
+![image_before_preprocessing](appendix/image_before_preprocessing.png)
+
 ### 1. Iris Localization
 
 **File:** iris_localization.py
@@ -88,6 +92,10 @@ The following UML class diagram describes the general architecture of the code:
 
 - Iris Boundary Detection: Used Canny edge detection and the Hough Circle Transform to detect circular iris boundaries.
 
+**Result:**
+
+![localized_image](appendix/localized_image.png)
+
 ### 2. Iris Normalization
 
 **File:** iris_normalization.py
@@ -95,6 +103,10 @@ The following UML class diagram describes the general architecture of the code:
 **Objective:** Normalize the localized iris into a rectangular image for consistent feature extraction.
 
 **Process:** The iris region is unwrapped using polar coordinates by generates the radial and angular coordinates and grids of shape M x N (64 x 512), computing the inner and outer boundaries of the iris, and remapping the original image to the normalized coordinates, which results in a consistent rectangular iris image of size M x N (64 x 512).
+
+**Result:**
+
+![normalized_image](appendix/normalized_image.png)
 
 ### 3. Image Enhancement
 
@@ -107,6 +119,12 @@ The following UML class diagram describes the general architecture of the code:
 - IrisIlluminater: Estimate the background illumination of the iris by dividing the image into 16 x 16 blocks, calculate the mean value for each block, contruct a block matrix of mean values, and resize the block matrix to the original image size using bicubic interpolation. 
 
 - IrisEnhancer: Enhance contrast by subtracting the background illumination from the normalized image, dividing the image into 32 x 32 blocks, and applying histogram equalization to blocks of the image.
+
+**Results:**
+
+![estimated_background_illumination](appendix/estimated_background_illumination.png)
+
+![enhanced_image](appendix/enhanced_image.png)
 
 ### 4. Feature Extraction
 
@@ -152,7 +170,7 @@ The following UML class diagram describes the general architecture of the code:
 
 **File:** iris_preprocessing.py
 
-**Objective:** Create the core pipeline that integrates the localization, normalization, enhancement, feature extraction, and matching modules to recognize irises.
+**Objective:** Create the core pipeline that integrates the localization, normalization, enhancement, feature extraction modules to recognize irises in the given input dataset
 
 **Process:**
 
@@ -186,7 +204,9 @@ input/
         ├── 1/
         
         └── 2/
-        
+
+Here, 001 denotes the class whereas 1 and 2 refer respectively to the training and testing images for that class.
+
 The load() method loads the images and splits them into training and testing sets.
 
 ### 2. Pipeline Execution
